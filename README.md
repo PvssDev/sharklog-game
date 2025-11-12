@@ -79,6 +79,7 @@ sharklog-game/
 │ ├── jogador.h
 │ └── logica.h
 ├── build/ # Saídas de compilação
+├── DOCUMENTACAO_TECNICA.md # Documentação Técnica do Projeto
 ├── README.md # Este arquivo
 ├── Makefile # Compilação automatizada
 └── LICENSE # Licença MIT
