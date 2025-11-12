@@ -137,3 +137,7 @@ Sob orientação das disciplinas de:
 ## 📜 Licença
 Este projeto pode ser utilizado sob a licença **MIT**.  
 Sinta-se livre para estudar, modificar e expandir o SharkLog! 🦈
+
+---
+
+📘 Para detalhes técnicos do projeto, acesse a [Documentação Técnica](DOCUMENTACAO_TECNICA.md).
