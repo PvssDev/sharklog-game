@@ -66,7 +66,7 @@ Assim, o jogador deve usar **dedução lógica** com base em pistas para prever 
 
 ## 🧩 Estrutura do Projeto
 ```bash
-SharkLog/
+sharklog-game/
 ├── src/ # Código-fonte (.c)
 │ ├── main.c
 │ ├── jogo.c
