@@ -13,9 +13,9 @@
 #include "logica.h"
 
 // Bibliotecas de interface (tela, teclado, temporizador)
-#include "cli-lib/include/screen.h"
-#include "cli-lib/include/keyboard.h"
-#include "cli-lib/include/timer.h"    
+#include "screen.h"
+#include "keyboard.h"
+#include "timer.h"    
 
 // Guarda o estado do jogo. 0 = rodando, 1 = deve terminar
 static int g_estado_jogo = 0; 
