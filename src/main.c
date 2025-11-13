@@ -1,9 +1,10 @@
 #include <string.h>
 
 // Bibliotecas de interface (tela, teclado, temporizador)
-#include "cli-lib/include/screen.h"
-#include "cli-lib/include/keyboard.h"
-#include "cli-lib/include/timer.h"
+#include "keyboard.h"
+#include "screen.h"
+#include "timer.h"
+
 
 // Módulo principal da lógica do jogo
 #include "jogo.h"
