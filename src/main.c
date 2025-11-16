@@ -1,55 +1,60 @@
 #include <string.h>
 
-// Bibliotecas de interface (tela, teclado, temporizador)
+// Bibliotecas de interface
 #include "keyboard.h"
 #include "screen.h"
 #include "timer.h"
 
-
-// Módulo principal da lógica do jogo
+// Módulo da lógica principal do jogo
 #include "jogo.h"
 
 int main() {
-    static int ch = 0;
+    int ch = 0;
 
-    // Inicialização das Bibliotecas
-    screenInit(1);
-    keyboardInit();
-    timerInit(50);
 
-    // Inicialização do Jogo
-    jogo_inicializar();
+    // Inicialização das bibliotecas externas
 
-    // Loop principal do jogo
-    while (jogo_deve_terminar() == 0) { // Continua enquanto o jogo não mandar parar
+    screenInit(1);          // habilita tela dupla-buffer
+    keyboardInit();         // entrada não bloqueante
+    timerInit(50);          // taxa de atualização ~20fps
 
-        // 1. Processa a entrada do usuário
+
+    // Inicialização do JOGO
+
+    jogo_inicializar();     // cria tabuleiro, jogador, etc.
+
+
+    // LOOP PRINCIPAL
+
+    while (!jogo_deve_terminar()) {
+
+        // ------ PROCESSA INPUT DO TECLADO ------
         if (keyhit()) {
             ch = readch();
-            jogo_processar_input(ch); // Envia a tecla para a lógica do jogo
+            jogo_processar_input(ch);  // envia para a lógica do jogo
         }
 
-        // 2. Atualiza o estado lógico do jogo
-        if (timerTimeOver() == 1) { // Executa na cadência do timer
-            jogo_atualizar_estado(); // Manda o jogo calcular o próximo "frame"
+        // ------ ATUALIZAÇÃO PERIÓDICA ------
+        if (timerTimeOver()) {
 
-            // 3. Desenha o estado atual
-            jogo_desenhar();
-            
-            // 4. Atualiza a tela física
-            screenUpdate();
+            jogo_atualizar_estado();  // atualiza lógica
+            jogo_desenhar();          // desenha TUDO, incluindo o tabuleiro 80x30
+            screenUpdate();           // envia desenhado pro terminal
         }
     }
 
-    // Finalização
-    
-    // Limpa os recursos do jogo
-    jogo_finalizar();
 
-    // Desaloca os recursos das bibliotecas de interface
+    // FINALIZAÇÃO
+
+
+    jogo_finalizar();       // libera tabuleiro, jogador, etc.
+
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
+
+    // Garante que o cursor volte ao normal
+    screenSetCursor(1);
 
     return 0;
 }

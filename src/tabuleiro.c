@@ -1,39 +1,34 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "tabuleiro.h"
 #include "screen.h"
 
-// Posição onde o tabuleiro aparece na tela
-#define OFFSET_X 5
-#define OFFSET_Y 3
+#define BORDA_TOP_LEFT     "╔"
+#define BORDA_TOP_RIGHT    "╗"
+#define BORDA_BOTTOM_LEFT  "╚"
+#define BORDA_BOTTOM_RIGHT "╝"
+#define BORDA_HORIZONTAL   "═"
+#define BORDA_VERTICAL     "║"
 
-#define TAB_LARGURA 80
-#define TAB_ALTURA 30
 
-// ------------------------------------------------------
-// CRIAÇÃO DO TABULEIRO GIGANTE
-// ------------------------------------------------------
-Tabuleiro* criar_tabuleiro_gigante() {
-
+Tabuleiro* criar_tabuleiro(int linhas, int colunas) {
     Tabuleiro *tab = (Tabuleiro*)malloc(sizeof(Tabuleiro));
-    tab->linhas = TAB_ALTURA;
-    tab->colunas = TAB_LARGURA;
+    tab->linhas = linhas;
+    tab->colunas = colunas;
 
-    tab->matriz = (char**)malloc(tab->linhas * sizeof(char*));
+    tab->matriz = (char**)malloc(linhas * sizeof(char*));
+    for (int i = 0; i < linhas; i++) {
+        tab->matriz[i] = (char*)malloc(colunas * sizeof(char));
 
-    for (int i = 0; i < tab->linhas; i++) {
-        tab->matriz[i] = (char*)malloc(tab->colunas * sizeof(char));
-        for (int j = 0; j < tab->colunas; j++) {
-            tab->matriz[i][j] = '.'; // vazio
+        for (int j = 0; j < colunas; j++) {
+            tab->matriz[i][j] = ':'; // fundo padrão
         }
     }
 
     return tab;
 }
 
-// ------------------------------------------------------
-// DESTRUIR TABULEIRO
-// ------------------------------------------------------
+
 void destruir_tabuleiro(Tabuleiro *tab) {
     for (int i = 0; i < tab->linhas; i++) {
         free(tab->matriz[i]);
@@ -42,48 +37,57 @@ void destruir_tabuleiro(Tabuleiro *tab) {
     free(tab);
 }
 
-// ------------------------------------------------------
-// DESENHO DO TABULEIRO GIGANTE
-// ------------------------------------------------------
+
 void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY) {
 
-    // Corrige posição do jogador
-    if (jogadorX < 0) jogadorX = 0;
-    if (jogadorX >= tab->colunas) jogadorX = tab->colunas - 1;
-    if (jogadorY < 0) jogadorY = 0;
-    if (jogadorY >= tab->linhas) jogadorY = tab->linhas - 1;
+    int L = tab->linhas;
+    int C = tab->colunas;
 
-    // Desenho linha por linha
-    for (int y = 0; y < tab->linhas; y++) {
-        for (int x = 0; x < tab->colunas; x++) {
+    // ----------- BORDA SUPERIOR -----------
+    screenSetColor(WHITE, BLACK);
+    screenGotoxy(MINX, MINY);
+    printf(BORDA_TOP_LEFT);
 
-            screenGotoxy(OFFSET_X + x, OFFSET_Y + y);
+    for (int i = 0; i < C; i++)
+        printf(BORDA_HORIZONTAL);
 
-            // Desenhar bordas
-            int eh_borda =
-                y == 0 ||
-                y == tab->linhas - 1 ||
-                x == 0 ||
-                x == tab->colunas - 1;
+    printf(BORDA_TOP_RIGHT);
 
-            if (eh_borda) {
-                screenSetColor(LIGHTGRAY, BLACK);
-                printf("#");
-                continue;
-            }
+
+    // ----------- CORPO DO TABULEIRO -----------
+    for (int y = 0; y < L; y++) {
+
+        screenGotoxy(MINX, MINY + 1 + y);
+        printf(BORDA_VERTICAL); // parede esquerda
+
+        for (int x = 0; x < C; x++) {
 
             // Jogador
             if (x == jogadorX && y == jogadorY) {
                 screenSetColor(RED, BLACK);
                 printf("P");
+                screenSetColor(LIGHTBLUE, BLACK);
                 continue;
             }
 
-            // Oceano padrão
-            screenSetColor(CYAN, BLACK);
+            // Conteúdo normal
+            screenSetColor(LIGHTBLUE, BLACK);
             printf("%c", tab->matriz[y][x]);
         }
+
+        screenSetColor(WHITE, BLACK);
+        printf(BORDA_VERTICAL); // parede direita
     }
+
+
+    // ----------- BORDA INFERIOR -----------
+    screenGotoxy(MINX, MINY + L + 1);
+    printf(BORDA_BOTTOM_LEFT);
+
+    for (int i = 0; i < C; i++)
+        printf(BORDA_HORIZONTAL);
+
+    printf(BORDA_BOTTOM_RIGHT);
 
     screenSetColor(WHITE, BLACK);
 }

@@ -7,13 +7,8 @@ typedef struct {
     char **matriz;
 } Tabuleiro;
 
-// Cria o tabuleiro gigante 80x30
-Tabuleiro* criar_tabuleiro_gigante();
-
-// Destrói o tabuleiro
+Tabuleiro* criar_tabuleiro(int linhas, int colunas);
 void destruir_tabuleiro(Tabuleiro *tab);
-
-// Desenha o tabuleiro gigante
 void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY);
 
 #endif
