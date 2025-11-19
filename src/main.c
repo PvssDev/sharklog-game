@@ -1,52 +1,86 @@
+/**
+ * main.h
+ * Created on Aug, 23th 2023
+ * Author: Tiago Barros
+ * Based on "From C to C++ course - 2002"
+*/
+
 #include <string.h>
 
-// Bibliotecas de interface (tela, teclado, temporizador)
-#include "keyboard.h"
 #include "screen.h"
+#include "keyboard.h"
 #include "timer.h"
 
+int x = 34, y = 12;
+int incX = 1, incY = 1;
 
-// Módulo principal da lógica do jogo
-#include "jogo.h"
+void printHello(int nextX, int nextY)
+{
+    screenSetColor(CYAN, DARKGRAY);
+    screenGotoxy(x, y);
+    printf("           ");
+    x = nextX;
+    y = nextY;
+    screenGotoxy(x, y);
+    printf("Hello World");
+}
 
-int main() {
+void printKey(int ch)
+{
+    screenSetColor(YELLOW, DARKGRAY);
+    screenGotoxy(35, 22);
+    printf("Key code :");
+
+    screenGotoxy(34, 23);
+    printf("            ");
+    
+    if (ch == 27) screenGotoxy(36, 23);
+    else screenGotoxy(39, 23);
+
+    printf("%d ", ch);
+    while (keyhit())
+    {
+        printf("%d ", readch());
+    }
+}
+
+int main() 
+{
     static int ch = 0;
+    static long timer = 0;
 
-    // Inicialização das Bibliotecas
     screenInit(1);
     keyboardInit();
     timerInit(50);
 
-    // Inicialização do Jogo
-    jogo_inicializar();
+    printHello(x, y);
+    screenUpdate();
 
-    // Loop principal do jogo
-    while (jogo_deve_terminar() == 0) { // Continua enquanto o jogo não mandar parar
-
-        // 1. Processa a entrada do usuário
-        if (keyhit()) {
+    while (ch != 10 && timer <= 100) //enter or 5s
+    {
+        // Handle user input
+        if (keyhit()) 
+        {
             ch = readch();
-            jogo_processar_input(ch); // Envia a tecla para a lógica do jogo
+            printKey(ch);
+            screenUpdate();
         }
 
-        // 2. Atualiza o estado lógico do jogo
-        if (timerTimeOver() == 1) { // Executa na cadência do timer
-            jogo_atualizar_estado(); // Manda o jogo calcular o próximo "frame"
+        // Update game state (move elements, verify collision, etc)
+        if (timerTimeOver() == 1)
+        {
+            int newX = x + incX;
+            if (newX >= (MAXX -strlen("Hello World") -1) || newX <= MINX+1) incX = -incX;
+            int newY = y + incY;
+            if (newY >= MAXY-1 || newY <= MINY+1) incY = -incY;
 
-            // 3. Desenha o estado atual
-            jogo_desenhar();
-            
-            // 4. Atualiza a tela física
+            printHello(newX, newY);
+
             screenUpdate();
+            timer++;
         }
     }
 
-    // Finalização
-    
-    // Limpa os recursos do jogo
-    jogo_finalizar();
-
-    // Desaloca os recursos das bibliotecas de interface
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
