@@ -15,27 +15,45 @@ INCLUDE_DIR = include
 SRC_FILES = $(notdir $(wildcard $(SRC_DIR)/*.c))
 OBJ_FILES = $(SRC_FILES:%.c=$(OBJ_DIR)/%.o)
 
+# -----------------------------
 # Build target
+# -----------------------------
 all: $(OBJ_DIR) $(OBJ_FILES)
 	@echo Creating $(BUILD_DIR)/$(PROJ_NAME)
-	@$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(PROJ_NAME) $(OBJ_FILES)
+	@$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(PROJ_NAME) $(OBJ_FILES)  # ADICIONADO: suporte a futuras libs (-lcli etc)
+	@echo Build complete!
 
-# Build directory
+# -----------------------------
+# Build directories
+# -----------------------------
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(OBJ_DIR): $(BUILD_DIR)
 	mkdir -p $(OBJ_DIR)
 
-# Object files
+# -----------------------------
+# Object files compilation
+# -----------------------------
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $@...
 	@$(CC) $(CFLAGS) -c $< -o $@
 
+# -----------------------------
 # Clean target
+# -----------------------------
 clean:
 	rm -rf $(BUILD_DIR)
+	@echo Clean complete!
 
+# -----------------------------
+# Rebuild target (clean + all)
+# -----------------------------
+rebuild: clean all
+	@echo Rebuild complete!
+
+# -----------------------------
 # Run target
+# -----------------------------
 run: all
-	./$(BUILD_DIR)/cli-lib-example
+	./$(BUILD_DIR)/$(PROJ_NAME)
