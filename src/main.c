@@ -1,168 +1,198 @@
 /**
-  * Created on Aug, 23th 2023
-  * Author: Tiago Barros
-  * Based on "From C to C++ course - 2002"
-  *
-  * Observação: mantive todas as funções originais e apenas integrei
-  * o tabuleiro com tubarões móveis e jogador emoji.
-  */
+ * main.c — finalizado com perguntas, pontuação e tubarões perseguição
+ *
+ * Mantive a estrutura original e apenas incrementei a movimentação para teclado sem scanf.
+ */
 
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "screen.h"
 #include "keyboard.h"
 #include "timer.h"
+#include "tabuleiro.h"
+#include "logica.h"
 
-#include "tabuleiro.h" // ADICIONADO: integração com o tabuleiro
+#define PONTOS_NORMAL 10
+#define PONTOS_DIFICIL 15
+#define VIDAS_INICIAIS 2
 
-// Emoji do jogador
-#define EMOJI_JOGADOR "🏄"
+// Jogador inicia numa posição segura dentro das bordas
+static int jogadorX = 4;
+static int jogadorY = 4;
 
-int x = 34, y = 12;
-int incX = 1, incY = 1;
+// HUD
+static int pontos = 0;
+static int vidas = VIDAS_INICIAIS;
 
-// Função para mover tubarões aleatoriamente
-void mover_tubaroes(Tabuleiro *tab) {
+// movimento temporário
+static int next_moveX = 0;
+static int next_moveY = 0;
+
+// função de movimentação (1 passo, respeita bordas)
+void aplicar_movimento(Tabuleiro *tab) {
+    if (!tab) return;
+    int nx = jogadorX + next_moveX;
+    int ny = jogadorY + next_moveY;
+    if (nx > 0 && nx < tab->colunas-1) jogadorX = nx;
+    if (ny > 0 && ny < tab->linhas-1) jogadorY = ny;
+    next_moveX = next_moveY = 0;
+}
+
+// tubarões perseguem: um passo em direção ao jogador (checa colisões simples)
+void mover_tubaroes_perseguicao(Tabuleiro *tab) {
     if (!tab) return;
 
+    // cria uma cópia temporária para evitar conflitos ao mover no mesmo loop
+    char **novo = malloc(tab->linhas * sizeof(char*));
     for (int i = 0; i < tab->linhas; i++) {
-        for (int j = 0; j < tab->colunas; j++) {
-            if (tab->matriz[i][j] == 'S') {
-                // escolhe direção aleatória: 0=esq,1=dir,2=cima,3=baixo
-                int dir = rand() % 4;
-                int ni = i, nj = j;
+        novo[i] = malloc(tab->colunas * sizeof(char));
+        memcpy(novo[i], tab->matriz[i], tab->colunas * sizeof(char));
+    }
 
-                switch(dir) {
-                    case 0: nj--; break;
-                    case 1: nj++; break;
-                    case 2: ni--; break;
-                    case 3: ni++; break;
-                }
-
-                // verifica limites e se não sobrescreve o jogador
-                if (ni > 1 && ni < tab->linhas-1 &&
-                    nj > 1 && nj < tab->colunas-1 &&
-                    !(ni == y && nj == x) &&
-                    tab->matriz[ni][nj] != 'S') {
-
-                    tab->matriz[ni][nj] = 'S';
-                    tab->matriz[i][j] = '.';
+    for (int y = 0; y < tab->linhas; y++) {
+        for (int x = 0; x < tab->colunas; x++) {
+            if (tab->matriz[y][x] == 'S') {
+                int best_dx = 0, best_dy = 0;
+                int dx = jogadorX - x;
+                int dy = jogadorY - y;
+                if (abs(dx) > abs(dy)) best_dx = (dx>0?1:-1);
+                else if (dy != 0) best_dy = (dy>0?1:-1);
+                else { best_dx = 0; best_dy = 0; }
+                int nx = x + best_dx;
+                int ny = y + best_dy;
+                if (nx > 0 && nx < tab->colunas-1 && ny > 0 && ny < tab->linhas-1) {
+                    if (novo[ny][nx] == '.' && !(nx==jogadorX && ny==jogadorY)) {
+                        novo[ny][nx] = 'S';
+                        novo[y][x] = '.';
+                    } else if (nx==jogadorX && ny==jogadorY) {
+                        novo[ny][nx] = 'S';
+                        novo[y][x] = '.';
+                    } else {
+                        novo[y][x] = 'S';
+                    }
+                } else {
+                    novo[y][x] = 'S';
                 }
             }
         }
     }
-}
 
-void printHello(int nextX, int nextY)
-{
-    screenSetColor(CYAN, DARKGRAY);
-    screenGotoxy(x, y);
-    printf("           ");
-    x = nextX;
-    y = nextY;
-    screenGotoxy(x, y);
-    printf(EMOJI_JOGADOR);  // trocado para emoji surfista
-}
-
-void printKey(int ch)
-{
-    screenSetColor(YELLOW, DARKGRAY);
-    screenGotoxy(35, 22);
-    printf("Key code :");
-
-    screenGotoxy(34, 23);
-    printf("            ");
-    
-    if (ch == 27) screenGotoxy(36, 23);
-    else screenGotoxy(39, 23);
-
-    printf("%d ", ch);
-    while (keyhit())
-    {
-        printf("%d ", readch());
+    // copia de volta
+    for (int i = 0; i < tab->linhas; i++) {
+        memcpy(tab->matriz[i], novo[i], tab->colunas * sizeof(char));
+        free(novo[i]);
     }
+    free(novo);
 }
 
-int main() 
-{
-    static int ch = 0;
-    static long timer = 0;
+static void desenhar_hud(Tabuleiro *tab) {
+    int hudY = MINY + tab->linhas + 2;
+    screenSetColor(YELLOW, DARKGRAY);
+    screenGotoxy(MINX, hudY);
+    printf("Pontos: %d  Vidas: %d", pontos, vidas);
+    screenSetColor(WHITE, BLACK);
+    screenUpdate();
+}
 
-    // Inicializações originais
+int main() {
+    srand((unsigned) time(NULL));
     screenInit(1);
     keyboardInit();
     timerInit(50);
 
-    // -----------------------------
-    // ADICIONADO: criar e popular tabuleiro
-    // -----------------------------
-    srand((unsigned) time(NULL));
-
-    Tabuleiro *tab = criar_tabuleiro(MAXY, MAXX);
-    if (tab == NULL) {
+    // carrega perguntas
+    BancoPerguntas banco;
+    if (!carregar_perguntas("data/perguntas.json", &banco)) {
         screenSetColor(RED, BLACK);
         screenGotoxy(1, MAXY + 2);
-        printf("Erro: falha ao criar tabuleiro. Continuando sem tabuleiro...");
+        printf("Aviso: nao foi possivel carregar data/perguntas.json");
         screenSetColor(WHITE, BLACK);
-    } else {
-        int qtd = 12;
-        for (int k = 0; k < qtd; k++) {
-            int rx = rand() % (tab->colunas - 4) + 2;
-            int ry = rand() % (tab->linhas - 4) + 2;
-            if (rx == x && ry == y) { k--; continue; }
-            tab->matriz[ry][rx] = 'S';
-        }
-
-        desenhar_tabuleiro(tab, x, y);
     }
-    // -----------------------------
-    // Fim da parte ADICIONADA
-    // -----------------------------
 
-    printHello(x, y);
-    screenUpdate();
+    // criar tabuleiro
+    Tabuleiro *tab = criar_tabuleiro(MAXY, MAXX);
+    if (!tab) {
+        screenSetColor(RED, BLACK);
+        screenGotoxy(1, MAXY + 3);
+        printf("Erro: falha ao criar tabuleiro.");
+        screenSetColor(WHITE, BLACK);
+        keyboardDestroy();
+        screenDestroy();
+        timerDestroy();
+        return 1;
+    }
 
-    while (ch != 10 && timer <= 100)
-    {
-        if (keyhit()) 
-        {
-            ch = readch();
-            printKey(ch);
-            screenUpdate();
-        }
+    // popula tubarões iniciais
+    int qtd = 12;
+    for (int k = 0; k < qtd; k++) {
+        int rx = rand() % (tab->colunas - 4) + 2;
+        int ry = rand() % (tab->linhas - 4) + 2;
+        if (rx == jogadorX && ry == jogadorY) { k--; continue; }
+        tab->matriz[ry][rx] = 'S';
+    }
 
-        if (timerTimeOver() == 1)
-        {
-            int newX = x + incX;
-            if (newX >= (MAXX -strlen(EMOJI_JOGADOR) -1) || newX <= MINX+1) incX = -incX;
-            int newY = y + incY;
-            if (newY >= MAXY-1 || newY <= MINY+1) incY = -incY;
+    desenhar_tabuleiro(tab, jogadorX, jogadorY);
+    desenhar_hud(tab);
 
-            // -----------------------------
-            // ADICIONADO: move tubarões a cada rodada
-            // -----------------------------
-            if (tab != NULL) {
-                mover_tubaroes(tab);
-                desenhar_tabuleiro(tab, newX, newY);
+    long frames = 0;
+
+    while (1) {
+        // duas perguntas normais
+        printf("\nPergunta 1 da rodada:\n");
+        int ok1 = perguntar_rodada(&banco, PONTOS_NORMAL);
+        if (ok1) pontos += PONTOS_NORMAL;
+        printf("\nPergunta 2 da rodada:\n");
+        int ok2 = perguntar_rodada(&banco, PONTOS_NORMAL);
+        if (ok2) pontos += PONTOS_NORMAL;
+
+        // movimentação jogador com keyboard.h
+        printf("\nAgora mova o jogador (WASD). Pressione tecla: ");
+        if (keyhit()) {
+            char cc = readch();
+            if (cc == 'w' || cc == 'W') { next_moveY=-1; next_moveX=0; }
+            else if (cc == 's' || cc == 'S') { next_moveY=1; next_moveX=0; }
+            else if (cc == 'a' || cc == 'A') { next_moveX=-1; next_moveY=0; }
+            else if (cc == 'd' || cc == 'D') { next_moveX=1; next_moveY=0; }
+            else if (cc == 'q' || cc == 'Q') { break; } // quit
+            else { next_moveX = next_moveY = 0; }
+        } else { next_moveX = next_moveY = 0; }
+
+        aplicar_movimento(tab);
+        mover_tubaroes_perseguicao(tab);
+
+        // colisão com tubarão
+        if (tab->matriz[jogadorY][jogadorX] == 'S') {
+            printf("\nUm tubarão te capturou! Responda a pergunta difícil para tentar escapar.\n");
+            int ok = perguntar_tubarao(&banco, PONTOS_DIFICIL);
+            if (ok) {
+                pontos += PONTOS_DIFICIL;
+                printf("Você escapou!\n");
+                tab->matriz[jogadorY][jogadorX] = '.';
+            } else {
+                vidas--;
+                printf("Você errou. Vidas restantes: %d\n", vidas);
+                if (vidas <= 0) {
+                    printf("\n🦈 GAME OVER — Você foi pego pelo tubarão e não teve mais vidas.\n");
+                    break;
+                } else {
+                    tab->matriz[jogadorY][jogadorX] = '.';
+                }
             }
-
-            printHello(newX, newY);
-
-            screenUpdate();
-            timer++;
         }
+
+        desenhar_tabuleiro(tab, jogadorX, jogadorY);
+        desenhar_hud(tab);
+        frames++;
     }
 
-    if (tab != NULL) {
-        destruir_tabuleiro(tab);
-        tab = NULL;
-    }
-
+    destruir_tabuleiro(tab);
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
 
+    printf("\nPontuação final: %d\n", pontos);
     return 0;
 }
