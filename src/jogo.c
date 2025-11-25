@@ -1,18 +1,14 @@
 /**
  * src/jogo.c
  * Implementa a lógica central do jogo.
- * É o "maestro" que coordena o tabuleiro, jogador e lógica.
  */
 
-#include <string.h> // Para strlen
+#include <string.h> 
+#include <stdlib.h> 
 #include "jogo.h"
-
-// Módulos de elementos do jogo
-#include "tabuleiro.h"
+#include "tabuleiro.h" 
 #include "jogador.h"
 #include "logica.h"
-
-// Bibliotecas de interface (tela, teclado, temporizador)
 #include "screen.h"
 #include "keyboard.h"
 #include "timer.h"    
@@ -20,99 +16,106 @@
 // Guarda o estado do jogo. 0 = rodando, 1 = deve terminar
 static int g_estado_jogo = 0; 
 
-// Posição do texto
+// ESTRUTURA GLOBAL DO JOGO
+static Tabuleiro *g_tabuleiro = NULL;
+static const int TAB_LINHAS = 20;
+static const int TAB_COLUNAS = 70;
+
+// Posição do Hello World (jogador temporário)
 static int g_x = 34;
 static int g_y = 12;
 
-// Direção do texto ("velocidade")
+// Direção 
 static int g_incX = 1;
 static int g_incY = 1;
 
-// Texto a ser exibido
 static const char* g_texto = "Hello World!";
 
 static void mover_e_desenhar_hello(int nextX, int nextY)
 {
-    // Define a cor (ex: CYAN no fundo DARKGRAY)
-    screenSetColor(CYAN, DARKGRAY);
-
-    // 1. Apaga o texto na posição ANTIGA (g_x, g_y)
-    screenGotoxy(g_x, g_y);
+    // Como estamos redesenhando o tabuleiro inteiro em jogo_desenhar,
+    // não precisamos apagar o rastro manualmente aqui, mas se o tabuleiro
+    // for estático, precisamos limpar o rastro do Hello World.
     
-    // Preenche a área antiga com espaços em branco
-    for (size_t i = 0; i < strlen(g_texto); i++) {
-        screenPuts(" "); // Envia um caractere de espaço
-    }
-
-    // 2. Atualiza as coordenadas globais
+    // Vamos apenas atualizar as coordenadas aqui
     g_x = nextX;
     g_y = nextY;
-
-    // 3. Escreve o texto na NOVA posição (g_x, g_y)
-    screenGotoxy(g_x, g_y);
-    screenPuts(g_texto);
 }
 
-
 void jogo_inicializar(void) {
-    // Desenha o texto na posição inicial no primeiro frame.
+    // 1. Configura a tela e limpa tudo
+    screenInit(1); 
+    keyboardInit();
+    timerInit(100);
+
+    // 2. Inicializa o Tabuleiro
+    g_tabuleiro = criar_tabuleiro(TAB_LINHAS, TAB_COLUNAS);
+    if (g_tabuleiro == NULL) {
+        screenDestroy();
+        exit(1); 
+    }
+    
+    // 3. DESENHO INICIAL OBRIGATÓRIO
+    // Desenha o tabuleiro pela primeira vez para garantir que apareça
+    desenhar_tabuleiro(g_tabuleiro, g_x - MINX - 1, g_y - MINY - 1);
+    
+    // Desenha o texto inicial por cima
     screenGotoxy(g_x, g_y);
     screenSetColor(CYAN, DARKGRAY);
     screenPuts(g_texto);
+    
+    screenUpdate(); // Garante que tudo apareça na tela
 }
 
 void jogo_processar_input(int tecla) {
-    // A tecla 'Enter' (código 10) finaliza o jogo
-    if (tecla == 10) {
-        g_estado_jogo = 1; // Manda o jogo parar
-        return;
+    if (tecla == 10) { // Enter
+        g_estado_jogo = 1; 
     }
-    
-    // Outras teclas podem ser processadas aqui (ex: movimento)
 }
 
 void jogo_atualizar_estado(void) {
-    // Esta função contém a lógica executada a cada "tick" do timer.
-
-    // Calcula a próxima posição X
     int newX = g_x + g_incX;
 
-    // Verifica colisão nas bordas X (MINX e MAXX vêm de screen.h)
-    if (newX >= (MAXX - strlen(g_texto) - 1) || newX <= MINX + 1) {
-        g_incX = -g_incX; // Inverte a direção X
+    // Colisão básica com as bordas do tabuleiro
+    // O tabuleiro começa em MINX+1 (borda esquerda) e termina em MINX+1+COLUNAS
+    if (newX >= (MINX + TAB_COLUNAS) || newX <= MINX + 1) {
+        g_incX = -g_incX;
     }
 
-    // Calcula a próxima posição Y
     int newY = g_y + g_incY;
-    
-    // Verifica colisão nas bordas Y (MINY e MAXY vêm de screen.h)
-    if (newY >= MAXY - 1 || newY <= MINY + 1) {
-        g_incY = -g_incY; // Inverte a direção Y
+    if (newY >= (MINY + TAB_LINHAS) || newY <= MINY + 1) {
+        g_incY = -g_incY;
     }
 
-    // Aplica o movimento e redesenha o texto na tela
     mover_e_desenhar_hello(newX, newY);
 }
 
 void jogo_desenhar(void) {
-
+    // Redesenha o tabuleiro a cada frame para garantir que ele não suma
+    // Nota: Isso pode causar um pouco de "flicker" (piscar), mas garante visualização
+    desenhar_tabuleiro(g_tabuleiro, g_x - MINX - 1, g_y - MINY - 1);
+    
+    // Desenha o texto por cima
+    screenGotoxy(g_x, g_y);
+    screenSetColor(CYAN, DARKGRAY);
+    screenPuts(g_texto);
+    
+    screenUpdate(); // Atualiza a tela
 }
 
 int jogo_deve_terminar(void) {
-    return g_estado_jogo; // Retorna 1 se for para parar, 0 se não
+    return g_estado_jogo;
 }
 
 void jogo_finalizar(void) {
-    // Limpa a tela
     screenClear();
-    
-    // Mostra mensagem final
+    destruir_tabuleiro(g_tabuleiro);
     screenGotoxy(10, 10);
     screenPuts("Obrigado por jogar!");
     screenUpdate();
+    timerDelay(1000);
     
-    // Pausa rápida para o usuário ver a mensagem
-    timerDelay(1000); // Espera 1 segundo (1000 ms)
-
-    // Libera qualquer memória alocada (malloc) aqui.
+    // Restaura o terminal
+    keyboardDestroy();
+    screenDestroy();
 }

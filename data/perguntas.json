@@ -1,0 +1,142 @@
+{
+  "perguntas_rodada": [
+    {
+      "pergunta": "Se P é verdadeiro e Q é falso, qual é o valor de P ∧ Q?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Se P é verdadeiro e Q é falso, qual é o valor de P ∨ Q?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é falso e Q é falso, qual é o valor de P ∨ Q?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Se P é falso e Q é verdadeiro, qual é o valor de P → Q?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "A operação ¬P representa:",
+      "alternativas": ["P é verdadeiro", "A negação de P", "P e Q ao mesmo tempo"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Se P ↔ Q é verdadeiro, então:",
+      "alternativas": ["P e Q têm o mesmo valor lógico", "P e Q são sempre falsos", "P implica Q"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Qual é o resultado de ¬(Verdadeiro)?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Se P é verdadeiro e Q é verdadeiro, qual o valor de P ↔ Q?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "A operação P ∧ Verdadeiro resulta em:",
+      "alternativas": ["P", "Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "A operação P ∨ Falso resulta em:",
+      "alternativas": ["P", "Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é falso, qual é o valor de ¬P?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é verdadeiro, qual o valor de P → Verdadeiro?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é verdadeiro, qual o valor de P → Falso?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Se P é falso, qual o valor de P → Verdadeiro?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "A expressão P ∧ ¬P é sempre:",
+      "alternativas": ["Verdadeira", "Falsa", "Depende de P"],
+      "correta": 1
+    },
+    {
+      "pergunta": "A expressão P ∨ ¬P é sempre:",
+      "alternativas": ["Verdadeira", "Falsa", "Depende de P"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P e Q são verdadeiros, P ∨ (¬Q ∧ P) é:",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é falso e Q é verdadeiro, ¬P ∧ Q é:",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Qual operação exige que ambos sejam verdadeiros para ser verdadeira?",
+      "alternativas": ["Ou (∨)", "E (∧)", "Implica (→)"],
+      "correta": 1
+    },
+    {
+      "pergunta": "Qual operação é falsa somente quando P é verdadeiro e Q é falso?",
+      "alternativas": ["Ou (∨)", "E (∧)", "Implica (→)"],
+      "correta": 2
+    }
+  ],
+
+  "perguntas_tubarao": [
+    {
+      "pergunta": "Se P é verdadeiro e Q é falso, qual é o valor de (P ∧ Q) ∨ (¬Q)?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Qual expressão é logicamente equivalente a ¬(P ∨ Q)?",
+      "alternativas": ["¬P ∧ ¬Q", "¬P ∨ ¬Q", "P ∧ Q"],
+      "correta": 0
+    },
+    {
+      "pergunta": "A tabela verdade de P → Q é falsa apenas quando:",
+      "alternativas": ["P é verdadeiro e Q é falso", "P e Q são falsos", "P é falso e Q é verdadeiro"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Qual destas proposições é uma tautologia?",
+      "alternativas": ["P ∨ ¬P", "P ∧ ¬P", "P → ¬P"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Se P é falso e Q é verdadeiro, qual é o valor de (P → Q) ∧ (Q → P)?",
+      "alternativas": ["Verdadeiro", "Falso"],
+      "correta": 1
+    },
+    {
+      "pergunta": "A expressão ¬(P → Q) é logicamente equivalente a:",
+      "alternativas": ["P ∧ ¬Q", "¬P ∧ Q", "P ∨ Q"],
+      "correta": 0
+    },
+    {
+      "pergunta": "Qual expressão é equivalente a (P ↔ Q)?",
+      "alternativas": ["(P ∧ Q) ∨ (¬P ∧ ¬Q)", "(P ∧ ¬Q)", "¬P ∨ Q"],
+      "correta": 0
+    }
+  ]
+}
