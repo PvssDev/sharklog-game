@@ -1,138 +1,95 @@
-/**
- * src/main.c
- * Versão final corrigida para compatibilidade com bibliotecas estáticas
- */
-
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
 #include <stdio.h>
-#include <unistd.h> // ADICIONADO: Para usar usleep
+#include <stdlib.h>
+#include <unistd.h> 
+#include <time.h>
+#include "../include/screen.h"
+#include "../include/keyboard.h"
+#include "../include/timer.h"
+#include "../include/tabuleiro.h" 
+#include "../include/jogador.h"
+#include "../include/jogo.h"
 
-#include "screen.h"
-#include "keyboard.h"
-#include "timer.h"
-#include "tabuleiro.h" 
-#include "jogador.h"
-
-// Função auxiliar local
-void mover_tubaroes(Tabuleiro *tab) {
-    if (!tab) return;
-
-    for (int i = 0; i < tab->linhas; i++) {
-        for (int j = 0; j < tab->colunas; j++) {
-            if (tab->matriz[i][j] == 'S') {
-                int dir = rand() % 4;
-                int ni = i, nj = j;
-
-                switch(dir) {
-                    case 0: nj--; break; // Esquerda
-                    case 1: nj++; break; // Direita
-                    case 2: ni--; break; // Cima
-                    case 3: ni++; break; // Baixo
-                }
-
-                if (ni > 0 && ni < tab->linhas &&
-                    nj > 0 && nj < tab->colunas &&
-                    tab->matriz[ni][nj] == '.') {
-                    
-                    tab->matriz[ni][nj] = 'S';
-                    tab->matriz[i][j] = '.';
-                }
-            }
-        }
-    }
-}
-
-int main() 
-{
-    int ch = 0;
-    int game_running = 1;
-
+int main() {
     screenInit(1);
     keyboardInit();
-    timerInit(1000); 
-
+    timerInit(100); 
     srand((unsigned) time(NULL));
 
-    Tabuleiro *tab = criar_tabuleiro(MAXY, MAXX);
-    if (tab == NULL) return 1;
-
-    int qtd_tubaroes = 15;
-    for (int k = 0; k < qtd_tubaroes; k++) {
-        int rx = rand() % (tab->colunas - 2) + 1;
-        int ry = rand() % (tab->linhas - 2) + 1;
-        tab->matriz[ry][rx] = 'S';
-    }
+    Tabuleiro *tab = criar_tabuleiro(ALTURA_JOGO, LARGURA_JOGO);
+    if (!tab) return 1;
 
     Jogador *surfista = criar_jogador(tab);
-    if (surfista == NULL) return 1;
+    if (!surfista) return 1;
 
-    desenhar_tabuleiro(tab, surfista->x, surfista->y);
+    jogo_inicializar_tubaroes(tab); 
 
-    while (game_running)
-    {
-        if (keyhit()) 
-        {
-            ch = readch();
+    int game_running = 1;
 
-            // Tratamento de setas (ESC sequence)
-            if (ch == 27) {
-                int ch2 = readch(); 
-                if (ch2 == '[') {
-                    int ch3 = readch();
-                    switch(ch3) {
-                        case 'A': ch = 'w'; break;
-                        case 'B': ch = 's'; break;
-                        case 'C': ch = 'd'; break;
-                        case 'D': ch = 'a'; break;
-                    }
-                }
+    while (game_running && surfista->vidas > 0) {
+        
+        // 1. Fase de Perguntas
+        desenhar_HUD(surfista);
+        desenhar_tabuleiro(tab, surfista->x, surfista->y);
+        if (!jogo_fase_perguntas(surfista)) {
+            game_running = 0; 
+            break;
+        }
+
+        // 2. Fase de Movimento Jogador
+        desenhar_HUD(surfista);
+        desenhar_tabuleiro(tab, surfista->x, surfista->y);
+        screenGotoxy(MINX + 2, MAXY - 2);
+        printf(" SUA VEZ! [W, A, S, D] para mover... ");
+        
+        int moveu = 0;
+        while (!moveu && game_running) {
+            if (keyhit()) {
+                int ch = readch();
+                if (ch == 'q' || ch == 'Q') game_running = 0;
+                if (mover_jogador(surfista, tab, ch)) moveu = 1;
             }
-            
-            if (ch == 10) { 
-                game_running = 0;
+        }
+        if (!game_running) break;
+
+        // 3. Fase Movimento Tubarões
+        jogo_mover_tubaroes(tab, surfista);
+        
+        // 4. Verificação de Colisão
+        if (verificar_colisao(surfista, tab)) {
+            int oldX = surfista->x, oldY = surfista->y;
+            surfista->x = 1; surfista->y = 1; // Tira do perigo visualmente
+
+            if (jogo_pergunta_tubarao(surfista)) {
+                // Acertou: Tubarões resetam, vida salva
             } else {
-                mover_jogador(surfista, tab, ch);
-                
-                if (verificar_colisao(surfista, tab)) {
-                    game_running = 0;
-                }
+                // Errou: Já perdeu vida na função, só reseta
             }
-            desenhar_tabuleiro(tab, surfista->x, surfista->y);
+            while(!keyhit()); readch(); // Pausa
+            jogo_inicializar_tubaroes(tab); 
         }
-
-        if (timerTimeOver() == 1)
-        {
-            mover_tubaroes(tab);
-
-            if (verificar_colisao(surfista, tab)) {
-                game_running = 0;
-            }
-
-            desenhar_tabuleiro(tab, surfista->x, surfista->y);
-        }
+        
+        // Limpa texto auxiliar
+        screenGotoxy(MINX + 2, MAXY - 2);
+        printf("                                       ");
     }
 
     screenClear();
-    screenGotoxy(MAXX/2 - 5, MAXY/2);
-    
-    if (verificar_colisao(surfista, tab)) {
+    screenGotoxy(MAXX/2 - 10, MAXY/2);
+    if (surfista->vidas <= 0) {
         screenSetColor(RED, BLACK);
-        printf("GAME OVER! O tubarao te pegou! 🦈");
+        printf("GAME OVER!");
     } else {
         screenSetColor(GREEN, BLACK);
-        printf("Jogo Encerrado.");
+        printf("JOGO ENCERRADO.");
     }
+    screenGotoxy(MAXX/2 - 10, MAXY/2 + 2);
+    printf("Pontuacao Final: %d", surfista->pontuacao);
 
     screenUpdate();
-    
-    // CORREÇÃO: timerDelay substituído por usleep
-    usleep(2000 * 1000); 
+    usleep(3000 * 1000); 
 
     destruir_jogador(surfista);
     destruir_tabuleiro(tab);
-
     keyboardDestroy();
     screenDestroy();
     timerDestroy();

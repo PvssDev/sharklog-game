@@ -1,27 +1,25 @@
-//Contém as funções que podem ser chamadas por outros módulos (como a main).
- 
-
 #ifndef JOGO_H
 #define JOGO_H
 
-// Configura o estado inicial do jogo (ex: posição de elementos).
-void jogo_inicializar(void);
+#include "tabuleiro.h"
+#include "jogador.h"
 
-// Processa uma tecla de entrada do usuário.
-void jogo_processar_input(int tecla);
+#define PONTOS_NORMAL 10
+#define PONTOS_DIFICIL 15
 
-// Atualiza o estado lógico do jogo (ex: movimento, colisões).
-// Esta função é chamada a cada "tick" do temporizador.
-void jogo_atualizar_estado(void);
+// Inicializa ou reseta os tubarões
+void jogo_inicializar_tubaroes(Tabuleiro *tab);
 
-// Desenha o estado atual do jogo na tela.
-void jogo_desenhar(void);
+// Fase de perguntas (retorna 1 = continua, 0 = sair)
+int jogo_fase_perguntas(Jogador *j);
 
-// Verifica se o jogo deve terminar.
-// Retorna 1 (true) para terminar, 0 (false) para continuar.
-int jogo_deve_terminar(void);
+// Pergunta difícil (retorna 1 = acertou/sobreviveu, 0 = errou/dano)
+int jogo_pergunta_tubarao(Jogador *j);
 
-// Libera recursos alocados pelo jogo antes de fechar.
-void jogo_finalizar(void);
+// Move os tubarões (IA)
+void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j);
 
-#endif // JOGO_H
+// Desenha o HUD
+void desenhar_HUD(Jogador *j);
+
+#endif
