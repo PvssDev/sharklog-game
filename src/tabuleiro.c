@@ -30,17 +30,17 @@ void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY) {
 
     screenSetColor(WHITE, BLACK);
     
-    // Borda Superior
+    // --- Borda Superior ---
     screenGotoxy(MINX, MINY);
     printf("%s", BORDA_CANTOS);
     for (int i = 0; i < C; i++) printf("%s%s", BORDA_HORIZONTAL, BORDA_HORIZONTAL); 
     printf("%s", BORDA_CANTOS);
 
-    // Mapa
+    // --- Mapa ---
     for (int y = 0; y < L; y++) {
         screenGotoxy(MINX, MINY + 1 + y);
         screenSetColor(WHITE, BLACK);
-        printf("%s", BORDA_VERTICAL);
+        printf("%s", BORDA_VERTICAL); // Borda Esquerda
 
         for (int x = 0; x < C; x++) {
             if (x == jogadorX && y == jogadorY) {
@@ -55,11 +55,11 @@ void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY) {
             }
         }
         screenSetColor(WHITE, BLACK);
-        printf("%s", BORDA_VERTICAL);
+        printf("%s", BORDA_VERTICAL); // Borda Direita
     }
 
-    // Borda Inferior
-    screenGotoxy(MINX, MINY + L + 1);
+    // --- Borda Inferior ---
+    screenGotoxy(MINX, MINY + L + 1); // Garante que fecha logo abaixo da ultima linha
     printf("%s", BORDA_CANTOS);
     for (int i = 0; i < C; i++) printf("%s%s", BORDA_HORIZONTAL, BORDA_HORIZONTAL);
     printf("%s", BORDA_CANTOS);
