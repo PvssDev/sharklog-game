@@ -2,8 +2,8 @@
 CC = gcc
 CFLAGS = -Wall -Werror -g -I$(INCLUDE_DIR) -DUTF8_SUPPORT
 
-#project name
-PROJ_NAME = cli-lib-example
+# Project name
+PROJ_NAME = game
 
 # Target directories
 BUILD_DIR   = build
@@ -35,7 +35,7 @@ $(OBJ_DIR): $(BUILD_DIR)
 # -----------------------------
 # Object files compilation
 # -----------------------------
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/tabuleiro.h
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/tabuleiro.h $(INCLUDE_DIR)/logica.h $(INCLUDE_DIR)/keyboard.h $(INCLUDE_DIR)/screen.h
 	@echo Compiling $@...
 	@$(CC) $(CFLAGS) -c $< -o $@
 
