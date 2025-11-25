@@ -7,7 +7,7 @@
 #include "../include/screen.h"
 #include "../include/keyboard.h"
 
-// --- BANCO DE PERGUNTAS (Agora com acentos e português correto) ---
+// --- BANCO DE PERGUNTAS (Português correto) ---
 static const char* PERGUNTAS_NORMAIS[][4] = {
     {"Se P é V e Q é F, valor de P ^ Q?", "Verdadeiro", "Falso", "1"}, 
     {"Se P é V e Q é F, valor de P v Q?", "Verdadeiro", "Falso", "0"}, 
@@ -53,20 +53,26 @@ int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice
     }
     screenUpdate(); 
 
-    // 2. Desenha o texto
+    // 2. Desenha o texto linha a linha e força o flush do buffer do C (fflush)
     screenSetColor(YELLOW, BLACK);
     screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LOGICA ===");
+    fflush(stdout);
     
     screenSetColor(WHITE, BLACK);
     screenGotoxy(MINX, START_Y + 2); printf("PERGUNTA: %s", p);
-    
+    fflush(stdout);
+
+    screenSetColor(CYAN, BLACK); // Cor para as alternativas
     screenGotoxy(MINX, START_Y + 4); printf("1) %s", r1);
+    fflush(stdout);
+
     screenGotoxy(MINX, START_Y + 5); printf("2) %s", r2);
+    fflush(stdout);
     
     screenSetColor(CYAN, BLACK);
     screenGotoxy(MINX, START_Y + 7); printf("Digite [1] ou [2] (Q sair): ");
     
-    screenUpdate(); // FORÇA O DESENHO NA TELA
+    screenUpdate(); // FORÇA O DESENHO FINAL NA TELA
 
     char ch = ' ';
     // Loop de espera
@@ -133,7 +139,8 @@ int jogo_fase_perguntas(Jogador *j) {
         }
         
         printf("(Pressione ENTER)");
-        screenUpdate(); // Atualiza para mostrar o resultado
+        fflush(stdout);
+        screenUpdate(); 
 
         // Espera OBRIGATÓRIA pelo ENTER
         while(1) {
@@ -184,6 +191,7 @@ int jogo_pergunta_tubarao(Jogador *j) {
         printf("ERROU! -1 VIDA. (ENTER)");
         return 0;
     }
+    fflush(stdout);
     screenUpdate();
     
     // Espera ENTER
