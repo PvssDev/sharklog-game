@@ -28,13 +28,14 @@ void destruir_tabuleiro(Tabuleiro *tab);
 // Desenho do tabuleiro com jogador
 void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY);
 
-// Movimentação do jogador dentro do tabuleiro
-void aplicar_movimento(Tabuleiro *tab, int *jogadorX, int *jogadorY, int moveX, int moveY);
+// Movimentação do jogador dentro do tabuleiro (usa variáveis globais no main)
+void aplicar_movimento(Tabuleiro *tab);
 
-// Movimentação dos tubarões em direção ao jogador
-void mover_tubaroes_perseguicao(Tabuleiro *tab, int jogadorX, int jogadorY);
+// Movimentação dos tubarões em direção ao jogador (usa variáveis globais no main)
+void mover_tubaroes_perseguicao(Tabuleiro *tab);
 
-// Checa colisão entre jogador e tubarão
-int checar_colisao(Tabuleiro *tab, int jogadorX, int jogadorY);
+// Funções extras que podem ser adicionadas sem apagar nada
+// int checar_colisao(Tabuleiro *tab, int jogadorX, int jogadorY); // opcional
+// void resetar_tabuleiro(Tabuleiro *tab); // opcional, incrementa funcionalidades futuras
 
 #endif
