@@ -44,18 +44,15 @@ static const char* PERGUNTAS_DIFICEIS[][4] = {
 // --- INTERFACE DE PERGUNTA (GUI) ---
 int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice_correta) {
     // Define a posição Y para desenhar LOGO ABAIXO da borda inferior
-    // ALTURA_JOGO (15) + MINY (1) + Borda(1) + Margem(1) = Linha 18
     int START_Y = MINY + ALTURA_JOGO + 4; 
 
-    // 1. Limpa APENAS a área das perguntas (Não usa screenClear global)
+    // Limpa APENAS a área das perguntas (Sem apagar o tabuleiro)
     screenSetColor(WHITE, BLACK);
     for(int i=0; i<8; i++) {
         screenGotoxy(MINX, START_Y + i);
-        // Limpa a linha com espaços vazios para apagar texto antigo
         printf("                                                                     "); 
     }
 
-    // 2. Desenha a pergunta
     screenSetColor(YELLOW, BLACK);
     screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LOGICA ===");
     
@@ -81,20 +78,22 @@ int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice
 
 // --- LÓGICA DO JOGO ---
 
-void jogo_inicializar_tubaroes(Tabuleiro *tab) {
-    jogo_resetar_tubaroes(tab);
-}
-
+// Movi essa função para cima para evitar o erro de Implicit Declaration
 void jogo_resetar_tubaroes(Tabuleiro *tab) {
     for(int i=0; i<tab->linhas; i++)
         for(int j=0; j<tab->colunas; j++)
             if(tab->matriz[i][j] == 'S') tab->matriz[i][j] = '.';
 
     for(int k=0; k<6; k++) {
-        int rL = rand() % (tab->linhas - 2) + 1; // Margem de segurança
+        int rL = rand() % (tab->linhas - 2) + 1;
         int rC = rand() % (tab->colunas - 2) + 1;
+        // Evita spawns muito próximos da borda logo no início
         if (rL > 3 || rC > 3) tab->matriz[rL][rC] = 'S';
     }
+}
+
+void jogo_inicializar_tubaroes(Tabuleiro *tab) {
+    jogo_resetar_tubaroes(tab);
 }
 
 int jogo_fase_perguntas(Jogador *j) {
@@ -112,8 +111,8 @@ int jogo_fase_perguntas(Jogador *j) {
         );
         
         int START_Y = MINY + ALTURA_JOGO + 4;
-        screenGotoxy(MINX, START_Y + 7); // Mesma linha do input para sobrescrever
-        printf("                                    "); // Limpa input
+        screenGotoxy(MINX, START_Y + 7); 
+        printf("                                    "); // Limpa o input anterior
         screenGotoxy(MINX, START_Y + 7);
 
         if (res == -1) return 0; 
@@ -127,10 +126,13 @@ int jogo_fase_perguntas(Jogador *j) {
             printf("ERROU! (Enter...)");
         }
         
-        while(!keyhit()); readch(); 
-        while(keyhit()) readch();   
+        // Corrigido para resolver o warning do while sem chaves
+        while(!keyhit()) {} 
+        readch();
+        while(keyhit()) readch(); 
     }
-    // Limpa a área de perguntas ao terminar a fase
+    
+    // Limpeza final da área de perguntas
     int START_Y = MINY + ALTURA_JOGO + 4;
     for(int i=0; i<8; i++) {
         screenGotoxy(MINX, START_Y + i);
@@ -180,15 +182,18 @@ void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j) {
                 novaMatriz[y][x] = '.'; 
                 int novoY = y, novoX = x;
                 
+                // Lógica de perseguição (movimento na direção do jogador)
                 if (abs(x - j->x) > abs(y - j->y)) {
                     if (x < j->x) novoX++; else if (x > j->x) novoX--;
                 } else {
                     if (y < j->y) novoY++; else if (y > j->y) novoY--;
                 }
                 
+                // Move se for válido e o destino estiver vazio
                 if (posicao_valida(novoX, novoY, tab->linhas, tab->colunas) && novaMatriz[novoY][novoX] == '.') {
                     novaMatriz[novoY][novoX] = 'S';
                 } else {
+                    // Se não puder mover, mantém na posição original
                     novaMatriz[y][x] = 'S'; 
                 }
             }
@@ -203,13 +208,11 @@ void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j) {
 }
 
 void desenhar_HUD(Jogador *j) {
-    // HUD fica logo abaixo da borda inferior
     int Y_HUD = MINY + ALTURA_JOGO + 2; 
     
     screenSetColor(WHITE, BLACK);
     screenGotoxy(MINX, Y_HUD);
     
     printf(" 🏄 PONTOS: %d  |  VIDAS: %d  |  [WASD] Mover | [Q] Sair ", j->pontuacao, j->vidas);
-    // Limpa resto da linha
     printf("               ");
 }
