@@ -7,43 +7,42 @@
 #include "../include/screen.h"
 #include "../include/keyboard.h"
 
-// --- BANCO DE PERGUNTAS (Seu JSON) ---
+// --- BANCO DE PERGUNTAS (Agora com acentos e português correto) ---
 static const char* PERGUNTAS_NORMAIS[][4] = {
-    {"Se P eh V e Q eh F, valor de P ^ Q?", "Verdadeiro", "Falso", "1"}, 
-    {"Se P eh V e Q eh F, valor de P v Q?", "Verdadeiro", "Falso", "0"}, 
-    {"Se P eh F e Q eh F, valor de P v Q?", "Verdadeiro", "Falso", "1"},
-    {"Se P eh F e Q eh V, valor de P -> Q?", "Verdadeiro", "Falso", "0"},
-    {"A operacao ~P representa:", "P eh verdadeiro", "A negacao de P", "1"},
-    {"Se P <-> Q eh verdadeiro, entao:", "P e Q tem mesmo valor", "P e Q sao falsos", "0"},
-    {"Qual eh o resultado de ~(Verdadeiro)?", "Verdadeiro", "Falso", "1"},
-    {"Se P eh V e Q eh V, valor de P <-> Q?", "Verdadeiro", "Falso", "0"},
-    {"A operacao P ^ Verdadeiro resulta em:", "P", "Falso", "0"},
-    {"A operacao P v Falso resulta em:", "P", "Verdadeiro", "0"},
-    {"Se P eh falso, qual valor de ~P?", "Verdadeiro", "Falso", "0"},
-    {"Se P eh V, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
-    {"Se P eh V, valor de P -> Falso?", "Verdadeiro", "Falso", "1"},
-    {"Se P eh F, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
-    {"A expressao P ^ ~P eh sempre:", "Falsa", "Verdadeira", "0"}, 
-    {"A expressao P v ~P eh sempre:", "Verdadeira", "Falsa", "0"},
-    {"Se P e Q sao V, P v (~Q ^ P) eh:", "Verdadeiro", "Falso", "0"},
-    {"Se P eh F e Q eh V, ~P ^ Q eh:", "Verdadeiro", "Falso", "0"},
-    {"Qual operacao exige ambos V?", "Ou (v)", "E (^)", "1"},
-    {"Qual operacao so eh falsa se V -> F?", "Ou (v)", "Implica (->)", "1"} 
+    {"Se P é V e Q é F, valor de P ^ Q?", "Verdadeiro", "Falso", "1"}, 
+    {"Se P é V e Q é F, valor de P v Q?", "Verdadeiro", "Falso", "0"}, 
+    {"Se P é F e Q é F, valor de P v Q?", "Verdadeiro", "Falso", "1"},
+    {"Se P é F e Q é V, valor de P -> Q?", "Verdadeiro", "Falso", "0"},
+    {"A operação ~P representa:", "P é verdadeiro", "A negação de P", "1"},
+    {"Se P <-> Q é verdadeiro, então:", "P e Q têm mesmo valor", "P e Q são falsos", "0"},
+    {"Qual é o resultado de ~(Verdadeiro)?", "Verdadeiro", "Falso", "1"},
+    {"Se P é V e Q é V, valor de P <-> Q?", "Verdadeiro", "Falso", "0"},
+    {"A operação P ^ Verdadeiro resulta em:", "P", "Falso", "0"},
+    {"A operação P v Falso resulta em:", "P", "Verdadeiro", "0"},
+    {"Se P é falso, qual valor de ~P?", "Verdadeiro", "Falso", "0"},
+    {"Se P é V, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
+    {"Se P é V, valor de P -> Falso?", "Verdadeiro", "Falso", "1"},
+    {"Se P é F, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
+    {"A expressão P ^ ~P é sempre:", "Falsa", "Verdadeira", "0"}, 
+    {"A expressão P v ~P é sempre:", "Verdadeira", "Falsa", "0"},
+    {"Se P e Q são V, P v (~Q ^ P) é:", "Verdadeiro", "Falso", "0"},
+    {"Se P é F e Q é V, ~P ^ Q é:", "Verdadeiro", "Falso", "0"},
+    {"Qual operação exige ambos V?", "Ou (v)", "E (^)", "1"},
+    {"Qual operação só é falsa se V -> F?", "Ou (v)", "Implica (->)", "1"} 
 };
 
 static const char* PERGUNTAS_DIFICEIS[][4] = {
     {"Se P=V, Q=F, valor de (P ^ Q) v (~Q)?", "Verdadeiro", "Falso", "0"},
-    {"Qual expressao equivalente a ~(P v Q)?", "~P ^ ~Q", "~P v ~Q", "0"},
-    {"Tabela P -> Q eh falsa apenas quando:", "P=V e Q=F", "P=F e Q=V", "0"},
-    {"Qual destas proposicoes eh tautologia?", "P v ~P", "P ^ ~P", "0"},
+    {"Qual expressão equivalente a ~(P v Q)?", "~P ^ ~Q", "~P v ~Q", "0"},
+    {"Tabela P -> Q é falsa apenas quando:", "P=V e Q=F", "P=F e Q=V", "0"},
+    {"Qual destas proposições é tautologia?", "P v ~P", "P ^ ~P", "0"},
     {"Se P=F, Q=V, valor de (P -> Q) ^ (Q -> P)?", "Verdadeiro", "Falso", "1"},
-    {"Expressao ~(P -> Q) eh equivalente a:", "P ^ ~Q", "~P ^ Q", "0"},
-    {"Qual expressao equivalente a (P <-> Q)?", "(P^Q)v(~P^~Q)", "(P^~Q)", "0"}
+    {"Expressão ~(P -> Q) é equivalente a:", "P ^ ~Q", "~P ^ Q", "0"},
+    {"Qual expressão equivalente a (P <-> Q)?", "(P^Q)v(~P^~Q)", "(P^~Q)", "0"}
 };
 
 // --- INTERFACE DE PERGUNTA (GUI) ---
 int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice_correta) {
-    // Posição Y calculada (Logo abaixo do HUD)
     int START_Y = MINY + ALTURA_JOGO + 4; 
 
     // 1. Limpa área das perguntas
@@ -52,34 +51,30 @@ int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice
         screenGotoxy(MINX, START_Y + i);
         printf("                                                                     "); 
     }
-    screenUpdate(); // Garante que limpou
+    screenUpdate(); 
 
-    // 2. Desenha o texto linha a linha e força atualização
+    // 2. Desenha o texto
     screenSetColor(YELLOW, BLACK);
     screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LOGICA ===");
-    screenUpdate();
-
+    
     screenSetColor(WHITE, BLACK);
-    screenGotoxy(MINX, START_Y + 1); printf("PERGUNTA: %s", p);
-    screenUpdate();
-
-    screenGotoxy(MINX, START_Y + 3); printf("1) %s", r1);
-    screenUpdate();
-
-    screenGotoxy(MINX, START_Y + 4); printf("2) %s", r2);
-    screenUpdate();
+    screenGotoxy(MINX, START_Y + 2); printf("PERGUNTA: %s", p);
+    
+    screenGotoxy(MINX, START_Y + 4); printf("1) %s", r1);
+    screenGotoxy(MINX, START_Y + 5); printf("2) %s", r2);
     
     screenSetColor(CYAN, BLACK);
-    screenGotoxy(MINX, START_Y + 6); printf("Digite [1] ou [2] (Q sair): ");
-    screenUpdate(); // O texto TEM que aparecer agora
+    screenGotoxy(MINX, START_Y + 7); printf("Digite [1] ou [2] (Q sair): ");
+    
+    screenUpdate(); // FORÇA O DESENHO NA TELA
 
     char ch = ' ';
-    // Loop de espera com respiro para o processador
+    // Loop de espera
     while(ch != '1' && ch != '2' && ch != 'q' && ch != 'Q') {
         if(keyhit()) {
             ch = readch();
         } else {
-            usleep(10000); // Espera 10ms (evita travar CPU em 100%)
+            usleep(10000); // 10ms delay para não travar CPU
         }
     }
     
@@ -122,34 +117,35 @@ int jogo_fase_perguntas(Jogador *j) {
         );
         
         int START_Y = MINY + ALTURA_JOGO + 4;
-        screenGotoxy(MINX, START_Y + 6); 
-        printf("                                            "); // Limpa input
-        screenGotoxy(MINX, START_Y + 6);
+        screenGotoxy(MINX, START_Y + 7); 
+        printf("                                              "); 
+        screenGotoxy(MINX, START_Y + 7);
 
         if (res == -1) return 0; 
 
         if (res == 1) {
             j->pontuacao += PONTOS_NORMAL;
             screenSetColor(GREEN, BLACK);
-            printf("ACERTOU! +%d pts.", PONTOS_NORMAL);
+            printf("ACERTOU! +%d pts. ", PONTOS_NORMAL);
         } else {
             screenSetColor(RED, BLACK);
-            printf("ERROU!");
+            printf("ERROU! ");
         }
         
-        screenGotoxy(MINX, START_Y + 7);
-        printf("(Pressione qualquer tecla...)");
-        screenUpdate();
+        printf("(Pressione ENTER)");
+        screenUpdate(); // Atualiza para mostrar o resultado
 
-        // Loop de espera melhorado para não travar
-        while(keyhit()) readch(); // Limpa buffer antes
-        while(!keyhit()) {
-            usleep(10000); 
+        // Espera OBRIGATÓRIA pelo ENTER
+        while(1) {
+            if(keyhit()) {
+                char c = readch();
+                if (c == 10 || c == 13 || c == ' ') break; // Aceita Enter ou Espaço
+            }
+            usleep(10000);
         }
-        readch(); // Lê a tecla
     }
     
-    // Limpeza final da área
+    // Limpeza final
     int START_Y = MINY + ALTURA_JOGO + 4;
     screenSetColor(WHITE, BLACK);
     for(int i=0; i<8; i++) {
@@ -173,27 +169,32 @@ int jogo_pergunta_tubarao(Jogador *j) {
     );
 
     int START_Y = MINY + ALTURA_JOGO + 4;
-    screenGotoxy(MINX, START_Y + 6);
-    printf("                                            ");
-    screenGotoxy(MINX, START_Y + 6);
+    screenGotoxy(MINX, START_Y + 7);
+    printf("                                              "); 
+    screenGotoxy(MINX, START_Y + 7);
 
     if (res == 1) {
         j->pontuacao += PONTOS_DIFICIL;
         screenSetColor(GREEN, BLACK);
-        printf("ESCAPOU! +%d pts.", PONTOS_DIFICIL);
+        printf("ESCAPOU! +%d pts. (ENTER)", PONTOS_DIFICIL);
         return 1;
     } else {
         j->vidas--;
         screenSetColor(RED, BLACK);
-        printf("ERROU! -1 VIDA.");
+        printf("ERROU! -1 VIDA. (ENTER)");
         return 0;
     }
     screenUpdate();
     
-    // Espera tecla
-    while(keyhit()) readch();
-    while(!keyhit()) usleep(10000);
-    readch();
+    // Espera ENTER
+    while(1) {
+        if(keyhit()) {
+            char c = readch();
+            if (c == 10 || c == 13 || c == ' ') break;
+        }
+        usleep(10000);
+    }
+    return (res == 1);
 }
 
 void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j) {
