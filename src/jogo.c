@@ -43,6 +43,7 @@ static const char* PERGUNTAS_DIFICEIS[][4] = {
 
 // --- INTERFACE DE PERGUNTA (GUI) ---
 int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice_correta) {
+    // Posição Y calculada (Logo abaixo do HUD)
     int START_Y = MINY + ALTURA_JOGO + 4; 
 
     // 1. Limpa área das perguntas
@@ -53,7 +54,7 @@ int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice
     }
     screenUpdate(); 
 
-    // 2. Desenha o texto linha a linha e força o flush do buffer do C (fflush)
+    // 2. Desenha o Título e Pergunta
     screenSetColor(YELLOW, BLACK);
     screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LOGICA ===");
     fflush(stdout);
@@ -62,14 +63,21 @@ int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice
     screenGotoxy(MINX, START_Y + 2); printf("PERGUNTA: %s", p);
     fflush(stdout);
 
-    screenSetColor(CYAN, BLACK); // Cor para as alternativas
-    screenGotoxy(MINX, START_Y + 4); printf("1) %s", r1);
+    // 3. Desenha as Opções Formatadas [1] e [2]
+    screenSetColor(CYAN, BLACK); // Cor de destaque
+    
+    // Opção 1 (com recuo de 2 espaços para visual limpo)
+    screenGotoxy(MINX + 2, START_Y + 4); 
+    printf("[1] %s", r1);
     fflush(stdout);
 
-    screenGotoxy(MINX, START_Y + 5); printf("2) %s", r2);
+    // Opção 2
+    screenGotoxy(MINX + 2, START_Y + 5); 
+    printf("[2] %s", r2);
     fflush(stdout);
     
-    screenSetColor(CYAN, BLACK);
+    // 4. Input
+    screenSetColor(WHITE, BLACK);
     screenGotoxy(MINX, START_Y + 7); printf("Digite [1] ou [2] (Q sair): ");
     
     screenUpdate(); // FORÇA O DESENHO FINAL NA TELA
