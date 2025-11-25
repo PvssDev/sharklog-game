@@ -1,13 +1,37 @@
+/**
+ * src/jogo.c
+ * Lógica do Jogo (Perguntas, Movimento, Punição)
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
 #include <unistd.h>
-#include "../include/jogo.h"
-#include "../include/logica.h"
+#include <time.h> // Para rand()
+
+// 1. Bibliotecas Base (Tela, Teclado, Timer)
 #include "../include/screen.h"
 #include "../include/keyboard.h"
+#include "../include/timer.h"
+#include "../include/logica.h"
 
-// --- BANCO DE PERGUNTAS (Português correto) ---
+// 2. Definições de Tipos 
+#include "../include/tabuleiro.h" 
+#include "../include/jogador.h"
+
+// 3. Cabeçalho do próprio módulo
+#include "../include/jogo.h"
+
+// Fallback se ALTURA_JOGO não estiver no tabuleiro.h
+#ifndef ALTURA_JOGO
+#define ALTURA_JOGO 15
+#endif
+
+#ifndef LARGURA_JOGO
+#define LARGURA_JOGO 35
+#endif
+
+// --- BANCO DE PERGUNTAS ---
 static const char* PERGUNTAS_NORMAIS[][4] = {
     {"Se P é V e Q é F, valor de P ^ Q?", "Verdadeiro", "Falso", "1"}, 
     {"Se P é V e Q é F, valor de P v Q?", "Verdadeiro", "Falso", "0"}, 
@@ -20,9 +44,9 @@ static const char* PERGUNTAS_NORMAIS[][4] = {
     {"A operação P ^ Verdadeiro resulta em:", "P", "Falso", "0"},
     {"A operação P v Falso resulta em:", "P", "Verdadeiro", "0"},
     {"Se P é falso, qual valor de ~P?", "Verdadeiro", "Falso", "0"},
-    {"Se P é V, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
-    {"Se P é V, valor de P -> Falso?", "Verdadeiro", "Falso", "1"},
-    {"Se P é F, valor de P -> Verdadeiro?", "Verdadeiro", "Falso", "0"},
+    {"Se P é V e Q é V, valor de P -> Q é Verdadeiro?", "Verdadeiro", "Falso", "0"},
+    {"Se P é V e Q é F, valor de P -> Q é Falso?", "Verdadeiro", "Falso", "1"},
+    {"Se P é F e Q é F, valor de P -> Q é Verdadeiro?", "Verdadeiro", "Falso", "0"},
     {"A expressão P ^ ~P é sempre:", "Falsa", "Verdadeira", "0"}, 
     {"A expressão P v ~P é sempre:", "Verdadeira", "Falsa", "0"},
     {"Se P e Q são V, P v (~Q ^ P) é:", "Verdadeiro", "Falso", "0"},
@@ -41,175 +65,225 @@ static const char* PERGUNTAS_DIFICEIS[][4] = {
     {"Qual expressão equivalente a (P <-> Q)?", "(P^Q)v(~P^~Q)", "(P^~Q)", "0"}
 };
 
-// --- INTERFACE DE PERGUNTA (GUI) ---
-int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice_correta) {
-    // Posição Y calculada (Logo abaixo do HUD)
-    int START_Y = MINY + ALTURA_JOGO + 4; 
+// --- FUNÇÃO AUXILIAR: Mover Tubarões Aleatoriamente ---
+void mover_tubaroes_aleatorio_pergunta(Tabuleiro *tab) {
+    if (!tab) return;
+    
+    for (int i = 0; i < tab->linhas; i++) {
+        for (int j = 0; j < tab->colunas; j++) {
+            if (tab->matriz[i][j] == 'S') {
+                int dir = rand() % 4; 
+                int ni = i, nj = j;
+                switch(dir) {
+                    case 0: nj--; break;
+                    case 1: nj++; break;
+                    case 2: ni--; break;
+                    case 3: ni++; break;
+                }
+                if (ni > 0 && ni < tab->linhas && nj > 0 && nj < tab->colunas && tab->matriz[ni][nj] == '.') {
+                    tab->matriz[ni][nj] = 'S';
+                    tab->matriz[i][j] = '.';
+                    if(dir == 1 || dir == 3) j++; 
+                }
+            }
+        }
+    }
+}
 
-    // 1. Limpa área das perguntas
+// --- FUNÇÃO AUXILIAR: Animar Punição ---
+void animar_punicao(Tabuleiro *tab, Jogador *j) {
+    int START_Y = MINY + ALTURA_JOGO + 3;
+    
+    // Loop de aproximadamente 3 segundos
+    for(int k=0; k<300; k++) {
+        if(keyhit()) readch(); // Consome input
+        
+        if (timerTimeOver()) {
+            mover_tubaroes_aleatorio_pergunta(tab);
+            
+            desenhar_tabuleiro(tab, j->x, j->y);
+            desenhar_HUD(j);
+            
+            screenSetColor(RED, BLACK);
+            screenGotoxy(MINX, START_Y);
+            printf("                                                                     "); 
+            screenGotoxy(MINX, START_Y);
+            printf("ERROU! PUNIÇÃO: CONGELADO... CUIDADO COM OS TUBARÕES!");
+            
+            screenUpdate();
+        }
+        usleep(10000); 
+    }
+}
+
+// --- FUNÇÃO AUXILIAR: Desenha apenas o texto da pergunta ---
+void desenhar_painel_pergunta(const char* p, const char* r1, const char* r2) {
+    int START_Y = MINY + ALTURA_JOGO + 3; 
+
     screenSetColor(WHITE, BLACK);
-    for(int i=0; i<8; i++) {
+    for(int i=0; i<6; i++) {
         screenGotoxy(MINX, START_Y + i);
         printf("                                                                     "); 
     }
-    screenUpdate(); 
-
-    // 2. Desenha o Título e Pergunta
+    
     screenSetColor(YELLOW, BLACK);
-    screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LOGICA ===");
-    fflush(stdout);
+    screenGotoxy(MINX, START_Y);     printf("=== PERGUNTA DE LÓGICA ===");
     
     screenSetColor(WHITE, BLACK);
-    screenGotoxy(MINX, START_Y + 2); printf("PERGUNTA: %s", p);
-    fflush(stdout);
-
-    // 3. Desenha as Opções Formatadas [1] e [2]
-    screenSetColor(CYAN, BLACK); // Cor de destaque
+    screenGotoxy(MINX, START_Y + 1); printf("P: %s", p); 
     
-    // Opção 1 (com recuo de 2 espaços para visual limpo)
-    screenGotoxy(MINX + 2, START_Y + 4); 
-    printf("[1] %s", r1);
-    fflush(stdout);
-
-    // Opção 2
-    screenGotoxy(MINX + 2, START_Y + 5); 
-    printf("[2] %s", r2);
-    fflush(stdout);
+    screenSetColor(CYAN, BLACK);
+    screenGotoxy(MINX + 2, START_Y + 2); printf("[1] %s", r1);
+    screenGotoxy(MINX + 2, START_Y + 3); printf("[2] %s", r2);
     
-    // 4. Input
     screenSetColor(WHITE, BLACK);
-    screenGotoxy(MINX, START_Y + 7); printf("Digite [1] ou [2] (Q sair): ");
-    
-    screenUpdate(); // FORÇA O DESENHO FINAL NA TELA
-
-    char ch = ' ';
-    // Loop de espera
-    while(ch != '1' && ch != '2' && ch != 'q' && ch != 'Q') {
-        if(keyhit()) {
-            ch = readch();
-        } else {
-            usleep(10000); // 10ms delay para não travar CPU
-        }
-    }
-    
-    if (ch == 'q' || ch == 'Q') return -1;
-    
-    int resp_usuario = (ch == '1') ? 0 : 1;
-    return (resp_usuario == indice_correta) ? 1 : 0;
+    screenGotoxy(MINX, START_Y + 4); printf("Escolha [1] ou [2] (ou mova-se WASD)");
 }
 
-// --- LÓGICA DO JOGO ---
+// --- INTERFACE DE PERGUNTA COM GAME LOOP ---
+int fazer_pergunta_gui(Tabuleiro *tab, Jogador *j, const char* p, const char* r1, const char* r2, int indice_correta) {
+    int respondendo = 1;
+    int resultado = 0; 
+    int ch = 0;
 
-void jogo_resetar_tubaroes(Tabuleiro *tab) {
+    desenhar_tabuleiro(tab, j->x, j->y);
+    desenhar_HUD(j);
+    desenhar_painel_pergunta(p, r1, r2);
+    screenUpdate();
+
+    while(respondendo) {
+        if(keyhit()) {
+            ch = readch();
+            if (ch == '1') { resultado = (indice_correta == 0) ? 1 : 0; respondendo = 0; }
+            else if (ch == '2') { resultado = (indice_correta == 1) ? 1 : 0; respondendo = 0; }
+            else if (ch == 'q' || ch == 'Q') { return -1; }
+            else {
+                int moveu = mover_jogador(j, tab, ch);
+                if (moveu) {
+                    desenhar_tabuleiro(tab, j->x, j->y);
+                    desenhar_HUD(j);
+                    desenhar_painel_pergunta(p, r1, r2);
+                    screenUpdate();
+                }
+            }
+        }
+        if (timerTimeOver()) {
+            mover_tubaroes_aleatorio_pergunta(tab);
+            desenhar_tabuleiro(tab, j->x, j->y);
+            desenhar_HUD(j);
+            desenhar_painel_pergunta(p, r1, r2);
+            screenUpdate();
+        }
+        if (verificar_colisao(j, tab)) return -2; 
+    }
+    return resultado;
+}
+
+void jogo_resetar_tubaroes(Tabuleiro *tab, int pontuacao) {
+    // 1. Limpa o tabuleiro
     for(int i=0; i<tab->linhas; i++)
         for(int j=0; j<tab->colunas; j++)
             if(tab->matriz[i][j] == 'S') tab->matriz[i][j] = '.';
 
-    for(int k=0; k<6; k++) {
+    // 2. Cálculo da Dificuldade Progressiva
+    // MUDANÇA: Base: 6. Aumento: +1 tubarão a cada 10 pontos (cada acerto).
+    int qtd_base = 6;
+    int qtd_extra = pontuacao / 10; // Ex: 10 pts = +1 tubarão, 20 pts = +2 tubarões
+    int total_tubaroes = qtd_base + qtd_extra;
+    
+    // Limite de segurança: max 30% do mapa
+    int limite_mapa = (tab->linhas * tab->colunas) / 3;
+    if (total_tubaroes > limite_mapa) total_tubaroes = limite_mapa;
+
+    // 3. Spawna os tubarões
+    for(int k=0; k<total_tubaroes; k++) {
         int rL = rand() % (tab->linhas - 2) + 1;
         int rC = rand() % (tab->colunas - 2) + 1;
-        if (rL > 3 || rC > 3) tab->matriz[rL][rC] = 'S';
+        
+        // Evita spawnar na zona segura (canto 1,1 a 3,3)
+        if (rL > 3 || rC > 3) {
+            if (tab->matriz[rL][rC] == '.') {
+                tab->matriz[rL][rC] = 'S';
+            } else {
+                k--; 
+            }
+        } else {
+            k--; 
+        }
     }
 }
 
-void jogo_inicializar_tubaroes(Tabuleiro *tab) {
-    jogo_resetar_tubaroes(tab);
+void jogo_inicializar_tubaroes(Tabuleiro *tab, int pontuacao) {
+    jogo_resetar_tubaroes(tab, pontuacao);
 }
 
-int jogo_fase_perguntas(Jogador *j) {
+int jogo_fase_perguntas(Tabuleiro *tab, Jogador *j) {
     int qtd_perguntas = 20; 
-    
     for(int i=0; i<2; i++) {
         int idx = rand() % qtd_perguntas;
         int correta = atoi(PERGUNTAS_NORMAIS[idx][3]);
 
-        int res = fazer_pergunta_gui(
-            PERGUNTAS_NORMAIS[idx][0], 
-            PERGUNTAS_NORMAIS[idx][1], 
-            PERGUNTAS_NORMAIS[idx][2], 
-            correta
-        );
+        int res = fazer_pergunta_gui(tab, j, PERGUNTAS_NORMAIS[idx][0], PERGUNTAS_NORMAIS[idx][1], PERGUNTAS_NORMAIS[idx][2], correta);
         
-        int START_Y = MINY + ALTURA_JOGO + 4;
-        screenGotoxy(MINX, START_Y + 7); 
-        printf("                                              "); 
-        screenGotoxy(MINX, START_Y + 7);
+        int START_Y = MINY + ALTURA_JOGO + 3;
+        screenSetColor(WHITE, BLACK);
+        for(int k=0; k<6; k++) {
+            screenGotoxy(MINX, START_Y + k);
+            printf("                                                                     ");
+        }
+        screenGotoxy(MINX, START_Y);
 
         if (res == -1) return 0; 
+        if (res == -2) return 1; 
 
         if (res == 1) {
             j->pontuacao += PONTOS_NORMAL;
             screenSetColor(GREEN, BLACK);
             printf("ACERTOU! +%d pts. ", PONTOS_NORMAL);
+            fflush(stdout);
+            screenUpdate();
+            usleep(1000 * 1000); 
         } else {
             screenSetColor(RED, BLACK);
-            printf("ERROU! ");
-        }
-        
-        printf("(Pressione ENTER)");
-        fflush(stdout);
-        screenUpdate(); 
-
-        // Espera OBRIGATÓRIA pelo ENTER
-        while(1) {
-            if(keyhit()) {
-                char c = readch();
-                if (c == 10 || c == 13 || c == ' ') break; // Aceita Enter ou Espaço
-            }
-            usleep(10000);
+            printf("ERROU! PUNIÇÃO: CONGELADO...");
+            fflush(stdout);
+            screenUpdate();
+            
+            animar_punicao(tab, j);
         }
     }
-    
-    // Limpeza final
-    int START_Y = MINY + ALTURA_JOGO + 4;
-    screenSetColor(WHITE, BLACK);
-    for(int i=0; i<8; i++) {
-        screenGotoxy(MINX, START_Y + i);
-        printf("                                                                     ");
-    }
-    screenUpdate();
     return 1;
 }
 
-int jogo_pergunta_tubarao(Jogador *j) {
-    int qtd_perguntas = 7; 
-    int idx = rand() % qtd_perguntas;
+int jogo_pergunta_tubarao(Tabuleiro *tab, Jogador *j) {
+    int qtd = 7; 
+    int idx = rand() % qtd;
     int correta = atoi(PERGUNTAS_DIFICEIS[idx][3]);
 
-    int res = fazer_pergunta_gui(
-        PERGUNTAS_DIFICEIS[idx][0], 
-        PERGUNTAS_DIFICEIS[idx][1], 
-        PERGUNTAS_DIFICEIS[idx][2], 
-        correta
-    );
+    int res = fazer_pergunta_gui(tab, j, PERGUNTAS_DIFICEIS[idx][0], PERGUNTAS_DIFICEIS[idx][1], PERGUNTAS_DIFICEIS[idx][2], correta);
 
-    int START_Y = MINY + ALTURA_JOGO + 4;
-    screenGotoxy(MINX, START_Y + 7);
+    int START_Y = MINY + ALTURA_JOGO + 3;
+    screenGotoxy(MINX, START_Y + 5); 
     printf("                                              "); 
-    screenGotoxy(MINX, START_Y + 7);
+    screenGotoxy(MINX, START_Y + 5); 
 
     if (res == 1) {
         j->pontuacao += PONTOS_DIFICIL;
         screenSetColor(GREEN, BLACK);
-        printf("ESCAPOU! +%d pts. (ENTER)", PONTOS_DIFICIL);
-        return 1;
+        printf("ESCAPOU! +%d pts.", PONTOS_DIFICIL);
+        fflush(stdout);
+        screenUpdate();
+        usleep(1000 * 1000); 
     } else {
         j->vidas--;
         screenSetColor(RED, BLACK);
-        printf("ERROU! -1 VIDA. (ENTER)");
-        return 0;
+        printf("ERROU! -1 VIDA & PUNIÇÃO DE 3s.");
+        fflush(stdout);
+        screenUpdate();
+        
+        animar_punicao(tab, j);
     }
-    fflush(stdout);
-    screenUpdate();
     
-    // Espera ENTER
-    while(1) {
-        if(keyhit()) {
-            char c = readch();
-            if (c == 10 || c == 13 || c == ' ') break;
-        }
-        usleep(10000);
-    }
     return (res == 1);
 }
 
@@ -219,19 +293,16 @@ void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j) {
         novaMatriz[i] = (char*)malloc(tab->colunas);
         memcpy(novaMatriz[i], tab->matriz[i], tab->colunas);
     }
-
     for(int y=0; y<tab->linhas; y++) {
         for(int x=0; x<tab->colunas; x++) {
             if(tab->matriz[y][x] == 'S') {
                 novaMatriz[y][x] = '.'; 
                 int novoY = y, novoX = x;
-                
                 if (abs(x - j->x) > abs(y - j->y)) {
                     if (x < j->x) novoX++; else if (x > j->x) novoX--;
                 } else {
                     if (y < j->y) novoY++; else if (y > j->y) novoY--;
                 }
-                
                 if (posicao_valida(novoX, novoY, tab->linhas, tab->colunas) && novaMatriz[novoY][novoX] == '.') {
                     novaMatriz[novoY][novoX] = 'S';
                 } else {
@@ -240,7 +311,6 @@ void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j) {
             }
         }
     }
-    
     for(int i=0; i<tab->linhas; i++) {
         memcpy(tab->matriz[i], novaMatriz[i], tab->colunas);
         free(novaMatriz[i]);

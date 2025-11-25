@@ -4,19 +4,22 @@
 #include "tabuleiro.h"
 #include "jogador.h"
 
-// --- AQUI ESTÃO AS DEFINIÇÕES QUE FALTAVAM ---
+// Definições de Pontuação
 #define PONTOS_NORMAL 10
-#define PONTOS_DIFICIL 15
+#define PONTOS_DIFICIL 20
 
-// Funções de Inicialização/Atualização
-void jogo_inicializar_tubaroes(Tabuleiro *tab);
-void jogo_resetar_tubaroes(Tabuleiro *tab);
+// Funções Principais
+// MUDANÇA: Agora aceitam 'pontuacao' para calcular dificuldade
+void jogo_inicializar_tubaroes(Tabuleiro *tab, int pontuacao);
+void jogo_resetar_tubaroes(Tabuleiro *tab, int pontuacao);
+
+int jogo_fase_perguntas(Tabuleiro *tab, Jogador *j);
+
+int fazer_pergunta_gui(Tabuleiro *tab, Jogador *j, const char* p, const char* r1, const char* r2, int indice_correta);
+
+int jogo_pergunta_tubarao(Tabuleiro *tab, Jogador *j);
+
 void jogo_mover_tubaroes(Tabuleiro *tab, Jogador *j);
 void desenhar_HUD(Jogador *j);
-
-// Funções de Lógica e Eventos
-int jogo_fase_perguntas(Jogador *j);
-int jogo_pergunta_tubarao(Jogador *j);
-int fazer_pergunta_gui(const char* p, const char* r1, const char* r2, int indice_correta);
 
 #endif
