@@ -1,6 +1,11 @@
 #ifndef __TABULEIRO_H__
 #define __TABULEIRO_H__
 
+// --- NOVO: Definições de tamanho do Jogo ---
+// Usamos 35 porque visualmente vai ocupar 70 espaços (devido aos emojis duplos)
+#define LARGURA_JOGO 35 
+#define ALTURA_JOGO  15
+
 // Emoji do tubarão (UTF-8)
 #define EMOJI_TUBARAO "🦈"
 

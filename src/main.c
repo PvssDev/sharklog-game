@@ -1,20 +1,21 @@
 /**
- * main.c
- * Versão LIMPA e corrigida
+ * src/main.c
+ * Versão final corrigida para compatibilidade com bibliotecas estáticas
  */
 
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <unistd.h> // ADICIONADO: Para usar usleep
 
 #include "screen.h"
 #include "keyboard.h"
 #include "timer.h"
-#include "tabuleiro.h" // Inclui apenas as assinaturas
+#include "tabuleiro.h" 
 #include "jogador.h"
 
-// Função auxiliar local (tudo bem estar aqui pois é 'static' ou específica do main)
+// Função auxiliar local
 void mover_tubaroes(Tabuleiro *tab) {
     if (!tab) return;
 
@@ -50,11 +51,10 @@ int main()
 
     screenInit(1);
     keyboardInit();
-    timerInit(80); 
+    timerInit(1000); 
 
     srand((unsigned) time(NULL));
 
-    // AQUI APENAS CHAMAMOS A FUNÇÃO (Não escrevemos o código dela aqui)
     Tabuleiro *tab = criar_tabuleiro(MAXY, MAXX);
     if (tab == NULL) return 1;
 
@@ -76,7 +76,7 @@ int main()
         {
             ch = readch();
 
-            // Tratamento de setas
+            // Tratamento de setas (ESC sequence)
             if (ch == 27) {
                 int ch2 = readch(); 
                 if (ch2 == '[') {
@@ -126,7 +126,9 @@ int main()
     }
 
     screenUpdate();
-    timerDelay(2000); 
+    
+    // CORREÇÃO: timerDelay substituído por usleep
+    usleep(2000 * 1000); 
 
     destruir_jogador(surfista);
     destruir_tabuleiro(tab);
