@@ -1,27 +1,12 @@
-#ifndef __LOGICA_H__
-#define __LOGICA_H__
+#ifndef LOGICA_H
+#define LOGICA_H
 
-#define MAX_PERGUNTAS 128
-#define MAX_ALTERNATIVAS 8
-#define MAX_TEXTO 256
+#include "tabuleiro.h" // Necessário se precisar usar tipos de tabuleiro
 
-typedef struct {
-    char pergunta[MAX_TEXTO];
-    char alternativas[MAX_ALTERNATIVAS][MAX_TEXTO];
-    int n_alternativas;
-    int correta;
-} Pergunta;
+// Verifica se uma coordenada (x,y) está dentro dos limites do tabuleiro
+int posicao_valida(int x, int y, int maxLinhas, int maxColunas);
 
-typedef struct {
-    Pergunta rodada[MAX_PERGUNTAS];
-    int qtd_rodada;
-    Pergunta tubarao[MAX_PERGUNTAS];
-    int qtd_tubarao;
-} BancoPerguntas;
-
-int carregar_perguntas(const char *path, BancoPerguntas *b);
-int perguntar_rodada(BancoPerguntas *b, int pontos_por_acerto);
-int perguntar_tubarao(BancoPerguntas *b, int pontos_por_acerto);
-int rand_between(int a, int b);
+// Calcula distância simples (Manhattan) entre dois pontos (útil para IA)
+int calcular_distancia(int x1, int y1, int x2, int y2);
 
 #endif
