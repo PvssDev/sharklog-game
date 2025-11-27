@@ -1,14 +1,13 @@
-#ifndef TABULEIRO_H
-#define TABULEIRO_H
+#ifndef __TABULEIRO_H__
+#define __TABULEIRO_H__
 
-// Dimensões do Jogo (Ajustado para caber na tela com margem)
-#define LARGURA_JOGO 35 
-#define ALTURA_JOGO  15
+#include <stdio.h>
+#include <stdlib.h>
 
-// Visuais
 #define EMOJI_TUBARAO "🦈"
 #define EMOJI_JOGADOR "🏄"
 
+// Borda ASCII
 #define BORDA_CANTOS       "+"
 #define BORDA_HORIZONTAL   "-"
 #define BORDA_VERTICAL     "|"
@@ -19,8 +18,22 @@ typedef struct {
     char **matriz;
 } Tabuleiro;
 
+// criação e destruição
 Tabuleiro* criar_tabuleiro(int linhas, int colunas);
 void destruir_tabuleiro(Tabuleiro *tab);
+
+// desenho
 void desenhar_tabuleiro(Tabuleiro *tab, int jogadorX, int jogadorY);
+
+// movimentação
+void aplicar_movimento(Tabuleiro *tab);
+void mover_tubaroes_perseguicao(Tabuleiro *tab);
+int checar_colisao(Tabuleiro *tab);
+
+// variáveis globais do jogador (extern)
+extern int jogadorX;
+extern int jogadorY;
+extern int next_moveX;
+extern int next_moveY;
 
 #endif

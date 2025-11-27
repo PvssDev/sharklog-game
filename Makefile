@@ -1,10 +1,9 @@
 # Compiler and flags
 CC = gcc
-# Tirei o -Werror para evitar que avisos simples na biblioteca do professor travem a compilação
-CFLAGS = -Wall -g -I$(INCLUDE_DIR) -DUTF8_SUPPORT
+CFLAGS = -Wall -Werror -g -I$(INCLUDE_DIR) -DUTF8_SUPPORT
 
-# Project name (MUDAMOS AQUI PARA O NOME DO SEU JOGO)
-PROJ_NAME = sharklog
+# Project name
+PROJ_NAME = game
 
 # Target directories
 BUILD_DIR   = build
@@ -13,7 +12,6 @@ SRC_DIR     = src
 INCLUDE_DIR = include
 
 # Source files
-# O wildcard pega automaticamente todos os .c (jogo, logica, main, screen, etc)
 SRC_FILES = $(notdir $(wildcard $(SRC_DIR)/*.c))
 OBJ_FILES = $(SRC_FILES:%.c=$(OBJ_DIR)/%.o)
 
@@ -37,9 +35,7 @@ $(OBJ_DIR): $(BUILD_DIR)
 # -----------------------------
 # Object files compilation
 # -----------------------------
-# Removi a dependência fixa de 'tabuleiro.h' aqui para evitar erros genéricos.
-# Agora ele recompila se o .c mudar.
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/tabuleiro.h $(INCLUDE_DIR)/logica.h $(INCLUDE_DIR)/keyboard.h $(INCLUDE_DIR)/screen.h
 	@echo Compiling $@...
 	@$(CC) $(CFLAGS) -c $< -o $@
 

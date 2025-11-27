@@ -14,3 +14,5 @@ void timerUpdateTimer(int valueMilliSec);
 int timerTimeOver();
 
 void timerPrint();
+
+void timerDelay(int ms);

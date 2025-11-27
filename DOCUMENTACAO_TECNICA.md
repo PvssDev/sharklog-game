@@ -43,8 +43,6 @@ sharklog-game/
 │ ├── tabuleiro.h
 │ ├── jogador.h
 │ └── logica.h
-├── data
-│ └── perguntas.js
 ├── build/ # Saídas de compilação
 ├── DOCUMENTACAO_TECNICA.md # Documentação Técnica do Projeto
 ├── README.md # Este arquivo
@@ -65,6 +63,16 @@ sharklog-game/
 ---
 
 ## 🧱 4. Estruturas de Dados Utilizadas
+
+### Estrutura da célula (posição no tabuleiro)
+```c
+typedef struct {
+    int temTubarao;
+    int temBonus;
+    int revelada;
+    int dica; // 1 se há tubarão próximo
+} Celula;
+```
 
 ### Estrutura do tabuleiro
 ```c
@@ -99,42 +107,43 @@ typedef struct {
 ---
 
 ## 🧠 6. Aplicação da Lógica Computacional
-O **SharkLog** utiliza **Lógica Proposicional** para te desafiar a desviar de tubarões em quanto responde questões de logica.
+O **SharkLog** utiliza **Lógica Proposicional** para definir e deduzir o estado das células do mar.
 
-### 6.1 Tabela-Verdade e Conectivos Lógicos
+### 6.1 Representação Lógica
 
-O jogador é desafiado a resolver expressões lógicas em tempo real para progredir. As perguntas exigem conhecimento prático das tabelas-verdade dos principais conectivos:
+Cada célula `(x, y)` do tabuleiro é uma proposição `P(x, y)`:
 
-Conjunção ($P \land Q$): Verdadeiro apenas se ambas as proposições forem verdadeiras.
+- `P(x, y) = 1` → Existe um tubarão na célula.
 
-Disjunção ($P \lor Q$): Verdadeiro se pelo menos uma proposição for verdadeira.
+- `P(x, y) = 0` → A célula é segura.
 
-Condicional ($P \rightarrow Q$): Falso apenas se o antecedente for verdadeiro e o consequente for falso ($V \rightarrow F$).
+A dica exibida para o jogador é calculada da seguinte forma:
 
-Negação ($\neg P$): Inverte o valor verdade da proposição.
 > D(x, y) = 1 se ∃ P(i, j) = 1 em alguma célula adjacente
 
 Ou seja, **se há ao menos um tubarão nas vizinhanças**, a dica é verdadeira (⚠️).
 
-### 6.2 Avaliação de Proposições e Tautologias
+### 6.2 Inferências Lógicas
 
-Durante o jogo, o sistema apresenta situações onde o jogador deve avaliar a validade de sentenças lógicas complexas:
+Durante o jogo, o jogador aplica raciocínios como:
 
-Avaliação de Valoração: Dada uma valoração para $P$ e $Q$ (ex: $P=V, Q=F$), qual o valor verdade de $(P \land \neg Q)$?
+- `¬D(x, y)` → Nenhum tubarão nas células adjacentes.
 
-Identificação de Tautologias: Reconhecer expressões que são sempre verdadeiras, independente da valoração (ex: $P \lor \neg P$).
+- `D(x, y)` → Pelo menos um tubarão está próximo.
 
-Equivalências Lógicas: Identificar proposições equivalentes, como a contrapositiva ou as Leis de De Morgan.
+- `D(x, y) ∧ ¬P(x, y)` → Existe perigo nas redondezas, mas a célula atual é segura.
 
-Essas mecânicas forçam o jogador a aplicar raciocínio dedutivo rápido sob pressão de tempo, simulando a necessidade de pensamento lógico claro em situações críticas.
+Essas inferências permitem tomar decisões **baseadas em proposições booleanas**, refletindo os conteúdos da disciplina de **Lógica Computacional**.
+
 ---
 
 ## 🧮 7. Sistema de Pontuação
-| Ação                           | Consequência       |
+| Ação                           | Pontos             |
 | ------------------------------ | ------------------ |
-| Responder de forma correta     | +10                |
-| Errar resposta                 | punição            |
-| Encontrar tubarão              | -1 de vida         |
+| Avançar para uma célula segura | +10                |
+| Encontrar bônus                | +50                |
+| Terminar o jogo sem morrer     | +200               |
+| Encontrar tubarão              | -100 e fim de jogo |
 
 A pontuação é armazenada dentro da estrutura do jogador e atualizada a cada jogada. Ao final, a pontuação total é exibida na interface CLI.
 
@@ -159,21 +168,31 @@ Essas funções permitem desenhar o tabuleiro, mover o jogador e exibir as mensa
 ## 🔁 9. Fluxo de Execução
 ### 9.1 Inicialização
 
+- O jogador insere o nome.
+
 - O tabuleiro é gerado dinamicamente.
 
 - Tubarões são posicionados aleatoriamente.
 
 ### 9.2 Execução
 
-- O jogador se move de acordo com os tubarões
-  
-- O jogador Tenta responder de forma correta as perguntas
+- O jogador escolhe uma coordenada (linha e coluna).
 
-- A cada rodada, o sistema aplica dificuldade adicionando tubarões.
+- A célula é revelada:
+
+    - Se for segura, mostra quantos tubarões há ao redor.
+
+    - Se tiver tubarão, o jogo termina.
+
+- A cada rodada, o sistema aplica inferência lógica para exibir dicas.
 
 ### 9.3 Pontuação
 
-- +10 pontos para pergunta correta.
+- +10 pontos para cada célula segura revelada.
+
+- -5 pontos para tentativas incorretas (se o modo lógico estiver ativado).
+
+- Bônus por concluir o tabuleiro sem perder.
 
 ### 9.4 Fim de jogo
 
@@ -187,12 +206,11 @@ Essas funções permitem desenhar o tabuleiro, mover o jogador e exibir as mensa
 
 ### Compilação manual:
 ```bash
-make clean
-make
+gcc src/*.c -Iinclude -lcli -o build/sharklog
 ```
 ### Execução:
 ```bash
-make run
+./build/sharklog
 ```
 
 ---
