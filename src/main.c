@@ -1,6 +1,10 @@
 /**
  * src/main.c
- * Versão Final - SharkLog Game (Sem Ondas)
+ * Versão Final - SharkLog Game
+ * Alteração: 
+ * - Removida mensagem "SUA VEZ"
+ * - Removido movimento automático dos tubarões no loop principal
+ * (Agora eles só devem se mover na punição, dentro de jogo.c)
  */
 
 #include <stdio.h>
@@ -52,45 +56,17 @@ int main() {
         desenhar_HUD(surfista);
         desenhar_tabuleiro(tab, surfista->x, surfista->y);
         
+        // Mantemos a variavel Y_MSG pois ela é usada nas mensagens de dano abaixo
         int Y_MSG = MINY + ALTURA_JOGO + 4;
-        screenGotoxy(MINX, Y_MSG);
-        printf(" SUA VEZ! [W, A, S, D] para mover... ");
         
         int moveu = 0;
-        
-        // Loop de Ação
-        while (!moveu && game_running) {
-            
-            // 1. Input do Jogador
-            if (keyhit()) {
-                int ch = readch();
-                if (ch == 'q' || ch == 'Q') {
-                    game_running = 0;
-                }
-                else if (mover_jogador(surfista, tab, ch)) {
-                    moveu = 1;
-                }
-                desenhar_tabuleiro(tab, surfista->x, surfista->y);
-            }
-
-            // 2. Movimento dos Inimigos (Tubarões)
-            if (timerTimeOver()) {
-                jogo_mover_tubaroes(tab, surfista);
                 
-                // Se um tubarão andou em cima de você
-                if (verificar_colisao(surfista, tab)) {
-                    moveu = 1; 
-                }
-                
-                desenhar_tabuleiro(tab, surfista->x, surfista->y);
-            }
-        }
-        
         if (!game_running) break;
         screenGotoxy(MINX, Y_MSG);
         printf("                                    ");
 
         // --- COLISÃO COM TUBARÃO (S) ---
+        // Verifica se o jogador andou em cima de um tubarão
         if (verificar_colisao(surfista, tab)) {
             
             // Remove o tubarão específico que mordeu
