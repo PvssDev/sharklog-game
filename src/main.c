@@ -16,9 +16,14 @@
 #include "../include/jogador.h"
 #include "../include/jogo.h"
 
-// Garante visibilidade
+// Garante visibilidade das funções
 void jogo_inicializar_tubaroes(Tabuleiro *tab, int pontuacao);
 void jogo_resetar_tubaroes(Tabuleiro *tab, int pontuacao);
+// Funções da Lula
+int verificar_colisao_lula(Jogador *j, Tabuleiro *tab);
+void gerenciar_lula_ciclo(Tabuleiro *tab, Jogador *j);
+void animar_punicao(Tabuleiro *tab, Jogador *j);
+void lula_colisao_reset(Tabuleiro *tab, Jogador *j); // Nova função usada
 
 int main() {
     screenInit(1);
@@ -34,6 +39,10 @@ int main() {
 
     // Inicializa o jogo
     jogo_resetar_tubaroes(tab, surfista->pontuacao); 
+    
+    // Limpeza inicial
+    screenClear(); 
+
     int game_running = 1;
 
     while (game_running && surfista->vidas > 0) {
@@ -59,7 +68,30 @@ int main() {
         screenGotoxy(MINX, Y_MSG);
         printf("                                    ");
 
-        // --- COLISÃO COM TUBARÃO (S) ---
+        // --- 1. COLISÃO COM LULA (🦑) ---
+        if (verificar_colisao_lula(surfista, tab)) {
+             screenSetColor(MAGENTA, BLACK);
+             screenGotoxy(MINX, Y_MSG);
+             printf("LULA TE PEGOU! SEGURADO PELOS TENTACULOS!");
+             
+             screenUpdate();
+             fflush(stdout); 
+             usleep(1000 * 1000);
+
+             // Aplica a punição (Congelado + Tubarões perseguindo)
+             animar_punicao(tab, surfista);
+             
+             // --- LULA DESAPARECE E CICLO REINICIA ---
+             // A lula some e só aparecerá após +50 pontos.
+             lula_colisao_reset(tab, surfista);
+             
+             // Limpeza pós punição
+             while(keyhit()) readch();
+             screenGotoxy(MINX, Y_MSG);
+             printf("                                             ");
+        }
+
+        // --- 2. COLISÃO COM TUBARÃO (S) ---
         if (verificar_colisao(surfista, tab)) {
             
             // Remove o tubarão específico que mordeu
@@ -73,21 +105,14 @@ int main() {
             screenGotoxy(MINX, Y_MSG);
             printf("AI! VOCE FOI MORDIDO! -1 VIDA");
             
-            // Garante que a mensagem apareça antes de pausar
             screenUpdate();
             fflush(stdout); 
-            
-            // Pausa dramática
             usleep(2000 * 1000); 
             
-            // --- CORREÇÃO DO BUFFER DE TECLADO ---
-            // Enquanto houver teclas "pendentes" que foram apertadas durante o sono,
-            // nós as lemos e jogamos fora para não afetar o movimento seguinte.
             while(keyhit()) {
                 readch();
             }
             
-            // Limpa a mensagem antes de continuar
             screenGotoxy(MINX, Y_MSG);
             printf("                                 ");
             screenUpdate();
@@ -109,7 +134,6 @@ int main() {
     screenUpdate();
     usleep(3000 * 1000); 
     
-    // Limpeza final do buffer para não sair escrevendo no terminal do usuário
     while(keyhit()) {
         readch();
     }
