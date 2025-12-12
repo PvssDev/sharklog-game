@@ -76,7 +76,7 @@ int main() {
              
              screenUpdate();
              fflush(stdout); 
-             usleep(1000 * 1000);
+             usleep(1000 * 3000);
 
              // Aplica a punição (Congelado + Tubarões perseguindo)
              animar_punicao(tab, surfista);

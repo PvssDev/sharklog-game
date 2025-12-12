@@ -2,6 +2,7 @@
  * src/jogo.c
  * Lógica do Jogo (Perguntas, Movimento, Punição, Inimigo Lula)
  * Versão: Lula desaparece e reseta ciclo após colisão
+ * Melhoria de IA: Desvia de Tubarões
  */
 
 #include <stdio.h>
@@ -29,6 +30,7 @@
 static int lula_ativa = 0;
 static int lula_contagem_acertos = 0; // Precisa de 5 para sumir
 static int lula_ultimo_spawn_pontos = 0; // Controla o spawn a cada 50 pts
+static int lula_passos_jogador = 0; // Controla a velocidade (1 passo dela a cada 2 do jogador)
 
 // --- BANCO DE PERGUNTAS ---
 static const char* PERGUNTAS_NORMAIS[][4] = {
@@ -51,10 +53,7 @@ static const char* PERGUNTAS_NORMAIS[][4] = {
     {"Se P e Q são V, P v (~Q ^ P) é:", "Verdadeiro", "Falso", "0"},
     {"Se P é F e Q é V, ~P ^ Q é:", "Verdadeiro", "Falso", "0"},
     {"Qual operação exige ambos V?", "Ou (v)", "E (^)", "1"},
-    {"Qual operação só é falsa se V -> F?", "Ou (v)", "Implica (->)", "1"} 
-};
-
-static const char* PERGUNTAS_DIFICEIS[][4] = {
+    {"Qual operação só é falsa se V -> F?", "Ou (v)", "Implica (->)", "1"}, 
     {"Se P=V, Q=F, valor de (P ^ Q) v (~Q)?", "Verdadeiro", "Falso", "0"},
     {"Qual expressão equivalente a ~(P v Q)?", "~P ^ ~Q", "~P v ~Q", "0"},
     {"Tabela P -> Q é falsa apenas quando:", "P=V e Q=F", "P=F e Q=V", "0"},
@@ -66,6 +65,7 @@ static const char* PERGUNTAS_DIFICEIS[][4] = {
 
 // Protótipo interno
 void desenhar_HUD(Jogador *j);
+int verificar_colisao_lula(Jogador *j, Tabuleiro *tab);
 
 // --- LÓGICA DA LULA ---
 
@@ -79,6 +79,7 @@ void spawn_lula(Tabuleiro *tab, Jogador *j) {
                 tab->matriz[rL][rC] = 'L'; 
                 lula_ativa = 1;
                 lula_contagem_acertos = 0;
+                lula_passos_jogador = 0; // Reseta contador de passos ao spawnar
                 return;
             }
         }
@@ -88,6 +89,7 @@ void spawn_lula(Tabuleiro *tab, Jogador *j) {
         tab->matriz[1][1] = 'L';
         lula_ativa = 1;
         lula_contagem_acertos = 0;
+        lula_passos_jogador = 0;
     }
 }
 
@@ -152,23 +154,79 @@ void mover_lula(Tabuleiro *tab, Jogador *j) {
 
     if (lx == -1) return; 
 
-    // Lógica de perseguição
-    int novoY = ly, novoX = lx;
-    if (abs(lx - j->x) > abs(ly - j->y)) {
-        if (lx < j->x) novoX++; else if (lx > j->x) novoX--;
-    } else {
-        if (ly < j->y) novoY++; else if (ly > j->y) novoY--;
-    }
+    // --- IA DE DESVIO DE OBSTÁCULOS (TUBARÕES) ---
+    
+    int dx = j->x - lx; // Diferença X
+    int dy = j->y - ly; // Diferença Y
+    
+    int novoX = lx;
+    int novoY = ly;
+    int movimento_escolhido_valido = 0;
 
-    if (posicao_valida(novoX, novoY, tab->linhas, tab->colunas)) {
-        if ((tab->matriz[novoY][novoX] == '.') || (novoX == j->x && novoY == j->y)) {
-            tab->matriz[ly][lx] = '.';
-            if (!(novoX == j->x && novoY == j->y)) {
-                tab->matriz[novoY][novoX] = 'L';
-            } else {
-                tab->matriz[novoY][novoX] = 'L';
+    // Tenta primeiro o eixo com maior distância
+    // Se a distância X for maior, tenta mover na Horizontal
+    if (abs(dx) > abs(dy)) {
+        // Tenta Horizontal
+        int testeX = lx + (dx > 0 ? 1 : -1);
+        int testeY = ly;
+
+        // Verifica se é válido (dentro do mapa) E não é um tubarão ('S')
+        if (posicao_valida(testeX, testeY, tab->linhas, tab->colunas)) {
+            char conteudo = tab->matriz[testeY][testeX];
+            if (conteudo == '.' || (testeX == j->x && testeY == j->y)) {
+                novoX = testeX;
+                novoY = testeY;
+                movimento_escolhido_valido = 1;
             }
         }
+
+        // Se a horizontal falhou (tem tubarão), tenta vertical como segunda opção
+        if (!movimento_escolhido_valido && dy != 0) {
+            int altY = ly + (dy > 0 ? 1 : -1);
+            int altX = lx;
+            if (posicao_valida(altX, altY, tab->linhas, tab->colunas)) {
+                char conteudo = tab->matriz[altY][altX];
+                if (conteudo == '.' || (altX == j->x && altY == j->y)) {
+                    novoX = altX;
+                    novoY = altY;
+                    movimento_escolhido_valido = 1;
+                }
+            }
+        }
+
+    } else {
+        // Tenta Vertical (distância Y é maior ou igual)
+        int testeY = ly + (dy > 0 ? 1 : -1);
+        int testeX = lx;
+
+        if (posicao_valida(testeX, testeY, tab->linhas, tab->colunas)) {
+            char conteudo = tab->matriz[testeY][testeX];
+            if (conteudo == '.' || (testeX == j->x && testeY == j->y)) {
+                novoX = testeX;
+                novoY = testeY;
+                movimento_escolhido_valido = 1;
+            }
+        }
+
+        // Se a vertical falhou (tem tubarão), tenta horizontal como segunda opção
+        if (!movimento_escolhido_valido && dx != 0) {
+            int altX = lx + (dx > 0 ? 1 : -1);
+            int altY = ly;
+            if (posicao_valida(altX, altY, tab->linhas, tab->colunas)) {
+                char conteudo = tab->matriz[altY][altX];
+                if (conteudo == '.' || (altX == j->x && altY == j->y)) {
+                    novoX = altX;
+                    novoY = altY;
+                    movimento_escolhido_valido = 1;
+                }
+            }
+        }
+    }
+
+    // Se encontrou um movimento válido, executa
+    if (movimento_escolhido_valido) {
+        tab->matriz[ly][lx] = '.';
+        tab->matriz[novoY][novoX] = 'L';
     }
 }
 
@@ -265,7 +323,17 @@ void animar_punicao(Tabuleiro *tab, Jogador *j) {
         
         if (timerTimeOver()) {
             jogo_mover_tubaroes(tab, j);
-            if(lula_ativa) mover_lula(tab, j); 
+            
+            // Correção Visual: Evita que a Lula "pisque" em cima do jogador durante a punição
+            if(lula_ativa) {
+                // Se a lula estiver na mesma posição do jogador (colisão),
+                // removemos visualmente para evitar o conflito de desenho
+                if(verificar_colisao_lula(j, tab)) {
+                    remover_lula(tab); 
+                } else {
+                    mover_lula(tab, j); 
+                }
+            }
 
             desenhar_tabuleiro(tab, j->x, j->y);
             desenhar_HUD(j);
@@ -319,7 +387,14 @@ int fazer_pergunta_gui(Tabuleiro *tab, Jogador *j, const char* p, const char* r1
             else {
                 int moveu = mover_jogador(j, tab, ch);
                 if (moveu) {
-                    if (lula_ativa) mover_lula(tab, j);
+                    // LÓGICA DE VELOCIDADE DA LULA (1 para cada 2 do jogador)
+                    if (lula_ativa) {
+                        lula_passos_jogador++;
+                        if (lula_passos_jogador >= 2) {
+                            mover_lula(tab, j);
+                            lula_passos_jogador = 0;
+                        }
+                    }
 
                     desenhar_tabuleiro(tab, j->x, j->y);
                     desenhar_HUD(j);
@@ -420,9 +495,12 @@ int jogo_fase_perguntas(Tabuleiro *tab, Jogador *j) {
              printf("A LULA TE PEGOU! TENTACULOS GELADOS!");
              fflush(stdout);
              screenUpdate();
-             animar_punicao(tab, j);
-             // AQUI: Reset completo da Lula
+	     usleep(1000 * 2000);
+             
+             // CORREÇÃO: Reseta ANTES de animar para ela sumir da tela imediatamente
              lula_colisao_reset(tab, j); 
+             
+             animar_punicao(tab, j);
              return 1;
         }
 
@@ -432,54 +510,35 @@ int jogo_fase_perguntas(Tabuleiro *tab, Jogador *j) {
             if (lula_ativa) {
                 lula_contagem_acertos++;
                 screenSetColor(CYAN, BLACK);
-                printf("ACERTOU! (Lula: %d/5 para sumir)", lula_contagem_acertos);
+                printf("ACERTOU! (Lula: %d/5 para despistar)", lula_contagem_acertos);
+		
+            	fflush(stdout);
+            	screenUpdate();
+            	usleep(1000 * 1500);
             } else {
                 screenSetColor(GREEN, BLACK);
                 printf("ACERTOU! +%d pts. ", PONTOS_NORMAL);
+		
+		fflush(stdout);
+           	screenUpdate();
+            	usleep(1000 * 800);
             }
 
-            fflush(stdout);
-            screenUpdate();
-            usleep(1000 * 1000); 
+    	    while(keyhit()) {
+     	      readch();
+   	    }
             
             gerenciar_lula_ciclo(tab, j);
 
         } else {
             screenSetColor(RED, BLACK);
-            printf("ERROU! PUNIÇÃO: CONGELADO...");
+            printf("ERROU! PUNIÇÃO: VOCE ESORREGOU...");
             fflush(stdout);
             screenUpdate();
             animar_punicao(tab, j); 
         }
     }
     return 1;
-}
-
-int jogo_pergunta_tubarao(Tabuleiro *tab, Jogador *j) {
-    int qtd = 7; 
-    int idx = rand() % qtd;
-    int correta = atoi(PERGUNTAS_DIFICEIS[idx][3]);
-    int res = fazer_pergunta_gui(tab, j, PERGUNTAS_DIFICEIS[idx][0], PERGUNTAS_DIFICEIS[idx][1], PERGUNTAS_DIFICEIS[idx][2], correta);
-    int START_Y = MINY + ALTURA_JOGO + 3;
-    screenGotoxy(MINX, START_Y + 5); 
-    printf("                              "); 
-    screenGotoxy(MINX, START_Y + 5); 
-    if (res == 1) {
-        j->pontuacao += PONTOS_DIFICIL;
-        screenSetColor(GREEN, BLACK);
-        printf("ESCAPOU! +%d pts.", PONTOS_DIFICIL);
-        fflush(stdout);
-        screenUpdate();
-        usleep(1000 * 1000); 
-    } else {
-        j->vidas--;
-        screenSetColor(RED, BLACK);
-        printf("ERROU! -1 VIDA & PUNIÇÃO DE 3s.");
-        fflush(stdout);
-        screenUpdate();
-        animar_punicao(tab, j); 
-    }
-    return (res == 1);
 }
 
 void desenhar_HUD(Jogador *j) {
@@ -492,7 +551,7 @@ void desenhar_HUD(Jogador *j) {
         screenSetColor(MAGENTA, BLACK);
         printf(" | 🦑 ALERTA (%d/5)", lula_contagem_acertos);
     } else {
-        printf("                ");
+        printf("                    ");
     }
     
     screenUpdate(); 
