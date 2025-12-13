@@ -1,6 +1,7 @@
 /**
  * src/main.c
  * Versão Final - SharkLog Game
+ * Lógica Principal de Loop e Colisão
  */
 
 #include <stdio.h>
@@ -15,9 +16,14 @@
 #include "../include/jogador.h"
 #include "../include/jogo.h"
 
-// Garante visibilidade
+// Garante visibilidade das funções
 void jogo_inicializar_tubaroes(Tabuleiro *tab, int pontuacao);
 void jogo_resetar_tubaroes(Tabuleiro *tab, int pontuacao);
+// Funções da Lula
+int verificar_colisao_lula(Jogador *j, Tabuleiro *tab);
+void gerenciar_lula_ciclo(Tabuleiro *tab, Jogador *j);
+void animar_punicao(Tabuleiro *tab, Jogador *j);
+void lula_colisao_reset(Tabuleiro *tab, Jogador *j); // Nova função usada
 
 int main() {
     screenInit(1);
@@ -33,6 +39,10 @@ int main() {
 
     // Inicializa o jogo
     jogo_resetar_tubaroes(tab, surfista->pontuacao); 
+    
+    // Limpeza inicial
+    screenClear(); 
+
     int game_running = 1;
 
     while (game_running && surfista->vidas > 0) {
@@ -53,44 +63,35 @@ int main() {
         desenhar_tabuleiro(tab, surfista->x, surfista->y);
         
         int Y_MSG = MINY + ALTURA_JOGO + 4;
-        screenGotoxy(MINX, Y_MSG);
-        printf(" SUA VEZ! [W, A, S, D] para mover... ");
-        
-        int moveu = 0;
-        
-        // Loop de Ação
-        while (!moveu && game_running) {
-            
-            // 1. Input do Jogador
-            if (keyhit()) {
-                int ch = readch();
-                if (ch == 'q' || ch == 'Q') {
-                    game_running = 0;
-                }
-                else if (mover_jogador(surfista, tab, ch)) {
-                    moveu = 1;
-                }
-                desenhar_tabuleiro(tab, surfista->x, surfista->y);
-            }
-
-            // 2. Movimento dos Inimigos (Tubarões)
-            if (timerTimeOver()) {
-                jogo_mover_tubaroes(tab, surfista);
-                
-                // Se um tubarão andou em cima de você
-                if (verificar_colisao(surfista, tab)) {
-                    moveu = 1; 
-                }
-                
-                desenhar_tabuleiro(tab, surfista->x, surfista->y);
-            }
-        }
         
         if (!game_running) break;
         screenGotoxy(MINX, Y_MSG);
         printf("                                    ");
 
-        // --- COLISÃO COM TUBARÃO (S) ---
+        // --- 1. COLISÃO COM LULA (🦑) ---
+        if (verificar_colisao_lula(surfista, tab)) {
+             screenSetColor(MAGENTA, BLACK);
+             screenGotoxy(MINX, Y_MSG);
+             printf("LULA TE PEGOU! SEGURADO PELOS TENTACULOS!");
+             
+             screenUpdate();
+             fflush(stdout); 
+             usleep(1000 * 3000);
+
+             // Aplica a punição (Congelado + Tubarões perseguindo)
+             animar_punicao(tab, surfista);
+             
+             // --- LULA DESAPARECE E CICLO REINICIA ---
+             // A lula some e só aparecerá após +50 pontos.
+             lula_colisao_reset(tab, surfista);
+             
+             // Limpeza pós punição
+             while(keyhit()) readch();
+             screenGotoxy(MINX, Y_MSG);
+             printf("                                             ");
+        }
+
+        // --- 2. COLISÃO COM TUBARÃO (S) ---
         if (verificar_colisao(surfista, tab)) {
             
             // Remove o tubarão específico que mordeu
@@ -105,10 +106,16 @@ int main() {
             printf("AI! VOCE FOI MORDIDO! -1 VIDA");
             
             screenUpdate();
-            usleep(1000 * 1000); 
+            fflush(stdout); 
+            usleep(2000 * 1000); 
+            
+            while(keyhit()) {
+                readch();
+            }
             
             screenGotoxy(MINX, Y_MSG);
             printf("                                 ");
+            screenUpdate();
         }
     }
 
@@ -126,6 +133,10 @@ int main() {
 
     screenUpdate();
     usleep(3000 * 1000); 
+    
+    while(keyhit()) {
+        readch();
+    }
 
     destruir_jogador(surfista);
     destruir_tabuleiro(tab);

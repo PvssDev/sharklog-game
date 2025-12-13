@@ -2,7 +2,7 @@
 #include <ctype.h>
 #include "../include/jogador.h"
 #include "../include/tabuleiro.h"
-#include "../include/logica.h"
+#include "../include/logica.h" // Usa a função posicao_valida
 
 Jogador* criar_jogador(Tabuleiro* tab) {
     if (!tab) return NULL;
